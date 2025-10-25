@@ -18,14 +18,4 @@ export const loginService = {
             throw error;
         }
     },
-
-    async test(){
-        try {
-            const {data} = await api.get('/auth');
-            return data;
-        }catch(error){
-            throw error;
-        }
-
-    }
 }

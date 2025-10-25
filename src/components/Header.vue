@@ -1,10 +1,12 @@
 <script setup>
-import { ref } from 'vue';
+import {onMounted, ref} from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/auth.js';
+import {useSedesStore} from "@/stores/sedes.js";
 
 const router = useRouter();
 const isMenuOpen = ref(false);
+const stateSedes = useSedesStore();
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
@@ -14,6 +16,10 @@ const logout = () => {
   authService.clearAuth();
   router.push('/login');
 };
+
+onMounted(() => {
+  stateSedes.getSedes();
+});
 </script>
 
 <template>

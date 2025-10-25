@@ -19,7 +19,7 @@ import Sidebar from "@/components/Sidebar.vue";
 
       <!-- Page Content -->
       <div class="p-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6 uppercase">home</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-6 uppercase">sedes</h1>
       </div>
     </main>
   </div>

@@ -25,6 +25,11 @@ const handleSubmit = ()=>{
 
       <!-- Formulario de Login -->
       <div class="bg-white rounded-2xl shadow-xl p-8">
+        <!-- Escudo de la institución -->
+        <div class="flex justify-center mb-6">
+          <img src="@/assets/img.png" alt="Escudo de la institución" class="w-[40%] h-auto">
+        </div>
+
         <!-- Título -->
         <div class="text-center mb-8">
           <h1 class="text-3xl font-bold text-gray-700 mb-2">Iniciar Sesión</h1>

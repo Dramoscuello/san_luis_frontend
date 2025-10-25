@@ -19,6 +19,18 @@ const router = createRouter({
           meta: {requiresAuth: true}
       },
       {
+          path:'/users',
+          name: 'users',
+          component: ()=>import('../views/UsersView.vue'),
+          meta: {requiresAuth: true}
+      },
+      {
+          path:'/sedes',
+          name: 'sedes',
+          component: ()=>import('../views/SedesView.vue'),
+          meta: {requiresAuth: true}
+      },
+      {
           path:'/login',
           redirect: '/'
       }
@@ -35,7 +47,7 @@ router.beforeEach((to, from, next) => {
         next('/login');
     }
     // Usuario autenticado intenta acceder a login
-    else if (to.meta.requiresGuest && isAuthenticated) {
+    else if (to.meta.requiresGuest && isAuthenticated){
         next('/home');
     }
     // Continuar normalmente
