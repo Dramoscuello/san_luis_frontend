@@ -26,6 +26,10 @@ export const useLoginStore = defineStore('login', ()=>{
             //console.log('Token recibido:', response.access_token);
             //console.log('Login exitoso');
             await router.push('/home');
+            Object.assign(data, {
+                username: '',
+                password: '',
+            });
 
         } catch (error) {
             showError.value = true;
