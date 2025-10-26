@@ -43,10 +43,12 @@ const handleSubmit = ()=>{
               Usuario
             </label>
             <input
-                type="text"
+                type="number"
                 id="username"
                 name="username"
                 v-model="loginStore.data.username"
+                minlength="8"
+                maxlength="12"
                 required
                 class="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition duration-200"
                 placeholder="Ingresa tu usuario"
