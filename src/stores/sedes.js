@@ -7,8 +7,7 @@ export const useSedesStore = defineStore('sedes', ()=>{
 
     async function getSedes(){
         try{
-            const respuesta = await sedesService.getSedes();
-            sedes.value = respuesta;
+            sedes.value = await sedesService.getSedes();
 
         }
         catch(e){

@@ -12,6 +12,19 @@ export const authService = {
         localStorage.removeItem('jwt_token');
     },
 
+    setUser(user) {
+        localStorage.setItem('user', JSON.stringify(user));
+    },
+
+    getUser() {
+        const user = localStorage.getItem('user');
+        return user ? JSON.parse(user) : null;
+    },
+
+    removeUser() {
+        localStorage.removeItem('user');
+    },
+
     isAuthenticated() {
         const token = this.getToken();
         if (!token) return false;
@@ -23,6 +36,7 @@ export const authService = {
 
             if (isExpired) {
                 this.clearAuth();
+                this.removeUser();
                 return false;
             }
 
@@ -34,5 +48,6 @@ export const authService = {
 
     clearAuth() {
         this.removeToken();
+        this.removeUser();
     }
 };

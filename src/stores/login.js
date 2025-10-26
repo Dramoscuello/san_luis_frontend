@@ -21,12 +21,11 @@ export const useLoginStore = defineStore('login', ()=>{
             const response = await loginService.login(data);
 
 
-            authService.setToken(response.access_token);
+            await authService.setToken(response.access_token);
+            await authService.setUser(data.username);
 
-            //console.log('Token recibido:', response.access_token);
-            //console.log('Login exitoso');
             await router.push('/home');
-            Object.assign(data, {
+            await Object.assign(data, {
                 username: '',
                 password: '',
             });

@@ -3,22 +3,27 @@ import {onMounted, ref} from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/auth.js';
 import {useSedesStore} from "@/stores/sedes.js";
+import {useUserStore} from "@/stores/user.js";
 
 const router = useRouter();
 const isMenuOpen = ref(false);
-const stateSedes = useSedesStore();
+const storeSedes = useSedesStore();
+const storeUser = useUserStore();
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
+
+
 
 const logout = () => {
   authService.clearAuth();
   router.push('/login');
 };
 
-onMounted(() => {
-  stateSedes.getSedes();
+onMounted(async () => {
+  await storeUser.getUserLogged();
+  await storeSedes.getSedes();
 });
 </script>
 
@@ -34,7 +39,7 @@ onMounted(() => {
             <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
               <span class="text-white text-sm font-medium">E</span>
             </div>
-            <span class="text-sm font-medium text-gray-700">Elkin Centeno</span>
+            <span class="text-sm font-medium text-gray-700">{{storeUser.user.nombre_completo}}</span>
             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
