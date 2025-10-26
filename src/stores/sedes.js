@@ -5,10 +5,11 @@ import {sedesService} from "@/services/sedesService.js";
 export const useSedesStore = defineStore('sedes', ()=>{
     const sedes = ref([]);
     const sede = reactive({
+        id:null,
         nombre:'',
         direccion:'',
         codigo:'',
-        active:true
+        active: null
     })
 
     async function getSedes(){
@@ -33,11 +34,29 @@ export const useSedesStore = defineStore('sedes', ()=>{
             console.error(e);
         }
     }
+
+    async function updateSede(){
+        try{
+            await sedesService.updateSede(sede);
+            const i =  sedes.value.findIndex(item=> item.id === sede.id);
+
+            if (i > -1){
+                sedes.value[i].active = sede.active;
+                sedes.value[i].nombre = sede.nombre;
+                sedes.value[i].codigo = sede.codigo;
+                sedes.value[i].direccion = sede.direccion;
+            }
+        }catch(e){
+            console.error(e);
+        }
+    }
+
     return {
         sede,
         sedes,
         getSedes,
-        updateEstado
+        updateEstado,
+        updateSede
     }
 });
 

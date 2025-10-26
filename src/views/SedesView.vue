@@ -1,27 +1,31 @@
 <script setup>
-import { ref } from 'vue';
 import Header from "@/components/Header.vue";
 import Sidebar from "@/components/Sidebar.vue";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import {useSedesStore} from "@/stores/sedes.js";
+import {useModalSedeStore} from "@/stores/modalSedes.js";
+import ModalSedes from "@/components/ModalSedes.vue";
 
 const store = useSedesStore();
+const storeModalSedes = useModalSedeStore();
 
 
 
 
 const toggleActivo = (sede) => {
   store.updateEstado({id: sede.id, active: !sede.active});
-  //sede.active = !sede.active;
-  //console.log(sede);
 };
 
 const editarSede = (sede) => {
-  console.log('Editar sede:', sede);
-  // Aquí puedes agregar la lógica para editar
-};
+  store.sede.nombre = sede.nombre;
+  store.sede.codigo = sede.codigo;
+  store.sede.direccion = sede.direccion;
+  store.sede.id = sede.id;
+  store.sede.active = sede.active;
+  storeModalSedes.toggleModalSede();
+}
 
 const eliminarSede = (sede) => {
   console.log('Eliminar sede:', sede);
@@ -81,4 +85,6 @@ const eliminarSede = (sede) => {
       </div>
     </main>
   </div>
+
+  <ModalSedes />
 </template>
