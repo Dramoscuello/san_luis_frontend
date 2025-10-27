@@ -31,7 +31,7 @@ export const useSedesStore = defineStore('sedes', ()=>{
                 sedes.value[i].active = obj.active;
             }
         }catch(e){
-            console.error(e);
+            throw e;
         }
     }
 
@@ -47,7 +47,20 @@ export const useSedesStore = defineStore('sedes', ()=>{
                 sedes.value[i].direccion = sede.direccion;
             }
         }catch(e){
-            console.error(e);
+            throw e;
+        }
+    }
+
+    async function deleteSede(sede_id){
+        try{
+            await sedesService.deleteSede(sede_id);
+            const i =  sedes.value.findIndex(item=> item.id === sede_id);
+
+            if (i > -1){
+                sedes.value.splice(i, 1);
+            }
+        }catch(e){
+            throw e;
         }
     }
 
@@ -56,7 +69,8 @@ export const useSedesStore = defineStore('sedes', ()=>{
         sedes,
         getSedes,
         updateEstado,
-        updateSede
+        updateSede,
+        deleteSede,
     }
 });
 

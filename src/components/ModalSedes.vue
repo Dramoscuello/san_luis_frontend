@@ -4,14 +4,22 @@ import {useSedesStore} from "@/stores/sedes.js";
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
+import { useToast } from "primevue/usetoast";
 
 const store = useModalSedeStore();
 const sede = useSedesStore();
+const toast = useToast();
 
 
 const HandleSubmit = async () =>{
-  await sede.updateSede();
-  store.toggleModalSede();
+  try{
+    await sede.updateSede();
+    toast.add({ severity: 'info', summary: 'OK', detail: '¡Sede actualizada!', life: 3000 });
+    store.toggleModalSede();
+  }catch(err){
+    console.log(err);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+  }
 }
 </script>
 

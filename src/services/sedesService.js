@@ -18,5 +18,14 @@ export const sedesService = {
         }catch(e){
             throw e;
         }
+    },
+
+    async deleteSede(sede_id) {
+        try{
+            const response  = await api.delete(`sedes/${sede_id}`);
+            return response;
+        }catch(e){
+            throw e;
+        }
     }
 }

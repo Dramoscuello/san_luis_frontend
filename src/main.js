@@ -5,9 +5,10 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
-
+import ConfirmationService from 'primevue/confirmationservice';
 import Aura from '@primevue/themes/aura';
 import PrimeVue from 'primevue/config';
+import ToastService from 'primevue/toastservice';
 import 'primeicons/primeicons.css';
 
 
@@ -21,5 +22,7 @@ app.use(PrimeVue, {
         preset: Aura
     }
 });
+app.use(ToastService);
+app.use(ConfirmationService);
 
 app.mount('#app')

@@ -7,15 +7,25 @@ import Button from 'primevue/button';
 import {useSedesStore} from "@/stores/sedes.js";
 import {useModalSedeStore} from "@/stores/modalSedes.js";
 import ModalSedes from "@/components/ModalSedes.vue";
+import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
+
 
 const store = useSedesStore();
 const storeModalSedes = useModalSedeStore();
+const toast = useToast();
+const confirm = useConfirm();
 
 
 
 
-const toggleActivo = (sede) => {
-  store.updateEstado({id: sede.id, active: !sede.active});
+const toggleActivo = async (sede) => {
+  try{
+    await store.updateEstado({id: sede.id, active: !sede.active});
+  }catch (error) {
+    console.log(error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+  }
 };
 
 const editarSede = (sede) => {
@@ -27,9 +37,32 @@ const editarSede = (sede) => {
   storeModalSedes.toggleModalSede();
 }
 
-const eliminarSede = (sede) => {
-  console.log('Eliminar sede:', sede);
-  // Aquí puedes agregar la lógica para eliminar
+const eliminarSede = async (sede) => {
+  try{
+    await store.deleteSede(sede.id);
+  }catch (error) {
+    console.log(error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+  }
+};
+
+const confirmDeleteSede = (sede) => {
+  confirm.require({
+    message: '¿Estás seguro que deseas eliminar esta sede?',
+    header: 'Alerta',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: 'Cerrar',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: 'Confirmar'
+    },
+    accept: () => {
+      eliminarSede(sede);
+    }
+  });
 };
 
 </script>
@@ -69,14 +102,12 @@ const eliminarSede = (sede) => {
                   class="p-button-rounded p-button-sm"
                   severity="info"
                   @click="editarSede(slotProps.data)"
-                  v-tooltip.top="'Editar'"
                 />
                 <Button
                   icon="pi pi-trash"
                   class="p-button-rounded p-button-sm"
                   severity="danger"
-                  @click="eliminarSede(slotProps.data)"
-                  v-tooltip.top="'Eliminar'"
+                  @click="confirmDeleteSede(slotProps.data)"
                 />
               </div>
             </template>
