@@ -9,7 +9,7 @@ export const useSedesStore = defineStore('sedes', ()=>{
         nombre:'',
         direccion:'',
         codigo:'',
-        active: null
+        active: true
     })
 
     async function getSedes(){
@@ -64,6 +64,16 @@ export const useSedesStore = defineStore('sedes', ()=>{
         }
     }
 
+    async function crearSede(){
+        try{
+            const {data} = await sedesService.createSede(sede);
+            console.log(data);
+            sedes.value.push(data);
+        }catch(e){
+            throw e;
+        }
+    }
+
     return {
         sede,
         sedes,
@@ -71,6 +81,7 @@ export const useSedesStore = defineStore('sedes', ()=>{
         updateEstado,
         updateSede,
         deleteSede,
+        crearSede,
     }
 });
 

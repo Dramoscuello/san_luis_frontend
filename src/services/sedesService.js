@@ -27,5 +27,15 @@ export const sedesService = {
         }catch(e){
             throw e;
         }
+    },
+
+    async createSede(obj) {
+        delete obj.id;
+        try{
+            const response  = await api.post(`/sedes`, obj);
+            return response;
+        }catch(e){
+            throw e;
+        }
     }
 }

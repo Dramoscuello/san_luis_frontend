@@ -65,6 +65,16 @@ const confirmDeleteSede = (sede) => {
   });
 };
 
+const agregarNuevaSede = () => {
+  // Limpiar los datos del formulario para modo "crear"
+  store.sede.nombre = '';
+  store.sede.codigo = '';
+  store.sede.direccion = '';
+  store.sede.id = null;
+  store.sede.active = true;
+  storeModalSedes.toggleModalSede();
+};
+
 </script>
 
 <template>
@@ -79,6 +89,17 @@ const confirmDeleteSede = (sede) => {
 
       <!-- Page Content -->
       <div class="p-8" id="sedes-table">
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-bold text-gray-800">Gestión de Sedes</h1>
+          <Button
+            label="Agregar Sede"
+            icon="pi pi-plus"
+            severity="success"
+            @click="agregarNuevaSede"
+          />
+        </div>
+
         <DataTable :value="store.sedes" :paginator="false" tableStyle="min-width: 50rem">
           <Column field="nombre" header="Sede"></Column>
           <Column field="codigo" header="Código"></Column>
