@@ -40,8 +40,9 @@ const toggleActivo = async (usuario) => {
 };
 
 const crearUsuario = () => {
-  console.log('Crear usuario');
-  // Implementar lógica
+  stateSedes.clearSelectedSedes();
+  userStore.resetUser();
+  storeModalUser.toggleModalUser();
 };
 
 const creacionMasiva = () => {
@@ -83,6 +84,7 @@ const editarUsuario = (data) => {
   userStore.user.sede_id  = data.sede_id;
   userStore.user.sede_nombre = data.sede_nombre;
   userStore.user.activo = data.activo;
+  userStore.user.password = null; // Limpiamos password al editar
   stateSedes.selectedSede.id = data.sede_id;
   stateSedes.selectedSede.nombre = data.sede_nombre;
   storeModalUser.toggleModalUser();

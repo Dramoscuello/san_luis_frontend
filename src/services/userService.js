@@ -36,5 +36,15 @@ export const userService = {
         }catch (e) {
             throw e;
         }
+    },
+
+    async createUser(obj){
+        delete obj.id;
+        try {
+            const response = await api.post(`/user/`, obj);
+            return response;
+        }catch (e){
+            throw e;
+        }
     }
 }

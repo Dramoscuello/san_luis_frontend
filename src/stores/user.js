@@ -17,14 +17,15 @@ export const useUserStore = defineStore("user", () => {
 
     const user = reactive({
         id:null,
-        email: '',
-        nombre_completo: '',
-        cedula: '',
+        email:'',
+        nombre_completo:'',
+        cedula:'',
         rol:'',
-        activo: true,
-        telefono: '',
+        activo:true,
+        telefono:'',
         sede_id:null,
-        sede_nombre:''
+        sede_nombre:'',
+        password:null
     });
 
     const users = ref([]);
@@ -47,7 +48,6 @@ export const useUserStore = defineStore("user", () => {
     async function getUsers(){
         try{
             const {data} = await userService.getUsers();
-            console.log(data);
             users.value = data;
         }catch(err){
             throw err;
@@ -69,7 +69,9 @@ export const useUserStore = defineStore("user", () => {
 
     async function updateUser(){
         try{
-            await userService.updateUser(user);
+            // No enviamos password en la actualización
+            const { password, ...userDataWithoutPassword } = user;
+            await userService.updateUser(userDataWithoutPassword);
             const i =  users.value.findIndex(item=> item.id === user.id);
 
             if (i > -1){
@@ -99,6 +101,36 @@ export const useUserStore = defineStore("user", () => {
             throw e;
         }
     }
+    async function createUser(){
+        try{
+            // Solo enviamos password al crear usuario nuevo
+            const {data} = await userService.createUser(user);
+            // Limpiamos el password inmediatamente por seguridad
+            user.password = null;
+            data.sede_nombre = user.sede_nombre;
+            users.value.push(data);
+        }catch(e){
+            throw e;
+        }
+    }
+
+    /**
+     * Resetea el objeto user a su estado inicial
+     * Útil para limpiar el formulario antes de crear/editar
+     */
+    function resetUser() {
+        user.id = null;
+        user.email = '';
+        user.nombre_completo = '';
+        user.cedula = '';
+        user.rol = '';
+        user.activo = true;
+        user.telefono = '';
+        user.sede_id = null;
+        user.sede_nombre = '';
+        user.password = null;
+    }
+
 
 
     return {
@@ -109,6 +141,8 @@ export const useUserStore = defineStore("user", () => {
         updateUserEstado,
         user,
         updateUser,
-        deleteUser
+        deleteUser,
+        createUser,
+        resetUser
     }
 });
