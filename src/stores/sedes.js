@@ -10,7 +10,12 @@ export const useSedesStore = defineStore('sedes', ()=>{
         direccion:'',
         codigo:'',
         active: true
-    })
+    });
+
+    const selectedSede = reactive({
+        id: null,
+        nombre: null
+    });
 
     async function getSedes(){
         try{
@@ -74,6 +79,11 @@ export const useSedesStore = defineStore('sedes', ()=>{
         }
     }
 
+    function clearSelectedSedes(){
+        selectedSede.id = null;
+        selectedSede.nombre = null;
+    }
+
     return {
         sede,
         sedes,
@@ -82,6 +92,8 @@ export const useSedesStore = defineStore('sedes', ()=>{
         updateSede,
         deleteSede,
         crearSede,
+        selectedSede,
+        clearSelectedSedes
     }
 });
 

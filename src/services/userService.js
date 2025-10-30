@@ -20,6 +20,7 @@ export const userService = {
     },
 
     async updateUser(obj){
+        //delete obj.sede_nombre;
         try{
             const response  = await api.patch(`/user/${obj.id}`, obj);
             return response;

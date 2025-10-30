@@ -14,10 +14,8 @@ const toast = useToast();
 const HandleSubmit =  () =>{
    if (sedeStore.sede.id) {
      actualizarSede();
-     console.log('VOY A ACTUALIZAR');
    }else{
      crearSede();
-     console.log('VOY A CREAR');
    }
 }
 

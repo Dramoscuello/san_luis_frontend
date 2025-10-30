@@ -6,7 +6,7 @@ import {sedesService} from "@/services/sedesService.js";
 
 
 export const useUserStore = defineStore("user", () => {
-    const user = reactive({
+    const userLogged = reactive({
         email : '',
         nombre_completo: '',
         cedula : '',
@@ -15,18 +15,30 @@ export const useUserStore = defineStore("user", () => {
         telefono: ''
     });
 
+    const user = reactive({
+        id:null,
+        email: '',
+        nombre_completo: '',
+        cedula: '',
+        rol:'',
+        activo: true,
+        telefono: '',
+        sede_id:null,
+        sede_nombre:''
+    });
+
     const users = ref([]);
 
     async function getUserLogged(){
         try{
             const username = await authService.getUser()
             const response = await userService.getInfoUserLogged(username)
-            user.email = response.email;
-            user.nombre_completo = response.nombre_completo;
-            user.cedula = response.cedula;
-            user.rol = response.rol;
-            user.activo = Boolean(response.activo);
-            user.telefono = response.telefono;
+            userLogged.email = response.email;
+            userLogged.nombre_completo = response.nombre_completo;
+            userLogged.cedula = response.cedula;
+            userLogged.rol = response.rol;
+            userLogged.activo = Boolean(response.activo);
+            userLogged.telefono = response.telefono;
         }catch(err){
             console.log(err);
         }
@@ -35,6 +47,7 @@ export const useUserStore = defineStore("user", () => {
     async function getUsers(){
         try{
             const {data} = await userService.getUsers();
+            console.log(data);
             users.value = data;
         }catch(err){
             throw err;
@@ -54,12 +67,35 @@ export const useUserStore = defineStore("user", () => {
         }
     }
 
+    async function updateUser(){
+        try{
+            console.log(user);
+            await userService.updateUser(user);
+            const i =  users.value.findIndex(item=> item.id === user.id);
+
+            if (i > -1){
+                users.value[i].activo = user.activo;
+                users.value[i].nombre_completo = user.nombre_completo;
+                users.value[i].email = user.email;
+                users.value[i].telefono = user.telefono;
+                users.value[i].rol = user.rol;
+                users.value[i].sede_id = user.sede_id;
+                users.value[i].sede_nombre = user.sede_nombre;
+                users.value[i].cedula = user.cedula;
+            }
+        }catch(e){
+            throw e;
+        }
+    }
+
 
     return {
-        user,
+        userLogged,
         getUserLogged,
         getUsers,
         users,
         updateUserEstado,
+        user,
+        updateUser
     }
 });

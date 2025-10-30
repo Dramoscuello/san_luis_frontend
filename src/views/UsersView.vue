@@ -3,21 +3,22 @@
 import Sidebar from "@/components/Sidebar.vue";
 import Header from "@/components/Header.vue";
 import Button from 'primevue/button';
-import Select from 'primevue/select';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import {useSedesStore} from "@/stores/sedes.js";
 import {ref, onMounted} from 'vue';
 import {useUserStore} from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
+import ModalUsers from "@/components/ModalUsers.vue";
+import {useModalUserStore} from "@/stores/modalUsers.js";
+import SelectSedes from "@/components/SelectSedes.vue";
+import {useSedesStore} from "@/stores/sedes.js";
 
-
-const stateSedes = useSedesStore();
-const selectedSede = ref(null);
 const currentPage = ref(0);
 const rowsPerPage = ref(10);
 const userStore = useUserStore();
 const toast = useToast();
+const storeModalUser = useModalUserStore();
+const stateSedes = useSedesStore();
 
 onMounted(async () => {
   await userStore.getUsers();
@@ -41,6 +42,25 @@ const creacionMasiva = () => {
   console.log('Creación masiva');
   // Implementar lógica
 };
+
+const eliminarUsuario = () => {
+  console.log('eliminar usuario');
+}
+
+const editarUsuario = (data) => {
+  userStore.user.id = data.id;
+  userStore.user.cedula = data.cedula;
+  userStore.user.nombre_completo = data.nombre_completo;
+  userStore.user.email = data.email;
+  userStore.user.telefono  = data.telefono;
+  userStore.user.rol = data.rol;
+  userStore.user.sede_id  = data.sede_id;
+  userStore.user.sede_nombre = data.sede_nombre;
+  userStore.user.activo = data.activo;
+  stateSedes.selectedSede.id = data.sede_id;
+  stateSedes.selectedSede.nombre = data.sede_nombre;
+  storeModalUser.toggleModalUser();
+}
 
 </script>
 
@@ -75,20 +95,13 @@ const creacionMasiva = () => {
           </div>
         </div>
 
-        <!-- Filters Section -->
         <div class="flex items-center gap-4 mb-6">
           <label for="filter-sedes" class="text-sm font-semibold text-gray-700">
             Filtrar por sede:
           </label>
-          <Select
-            v-model="selectedSede"
-            :options="stateSedes.sedes"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Seleccione una sede"
-            class="w-64"
-          />
+        <SelectSedes/>
         </div>
+
 
         <!-- DataTable -->
         <DataTable
@@ -103,12 +116,12 @@ const creacionMasiva = () => {
           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
         >
           <Column field="email" header="Email" :sortable="true"></Column>
-          <Column field="nombre" header="Nombre Completo" :sortable="true"></Column>
+          <Column field="nombre_completo" header="Nombre Completo" :sortable="true"></Column>
           <Column field="cedula" header="Cédula" :sortable="true"></Column>
           <Column field="rol" header="Rol" :sortable="true"></Column>
           <Column field="sede_nombre" header="Sede" :sortable="true"></Column>
           <Column field="telefono" header="Teléfono" :sortable="true"></Column>
-          <Column field="activo" header="Activo">
+          <Column field="activo" header="Estado">
             <template #body="slotProps">
               <span
                 @click="toggleActivo(slotProps.data)"
@@ -119,10 +132,30 @@ const creacionMasiva = () => {
               </span>
             </template>
           </Column>
+          <Column header="Opciones">
+            <template #body="slotProps">
+              <div class="flex gap-2">
+                <Button
+                    icon="pi pi-pencil"
+                    class="p-button-rounded p-button-sm"
+                    severity="info"
+                    @click="editarUsuario(slotProps.data)"
+                />
+                <Button
+                    icon="pi pi-trash"
+                    class="p-button-rounded p-button-sm"
+                    severity="danger"
+                    @click="eliminarUsuario(slotProps.data)"
+                />
+              </div>
+            </template>
+          </Column>
         </DataTable>
       </div>
     </main>
   </div>
+
+  <ModalUsers/>
 </template>
 
 <style scoped>
