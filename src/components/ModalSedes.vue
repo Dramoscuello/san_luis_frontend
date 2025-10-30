@@ -50,7 +50,6 @@ const actualizarSede = async () => {
     <form
     @submit.prevent="HandleSubmit"
     >
-      <span class="text-surface-500 dark:text-surface-400 block mb-8">Actualizar información</span>
       <div class="flex items-center gap-4 mb-4">
         <label for="codigo" class="font-semibold w-24">Código</label>
         <InputText id="codigo" v-model="sedeStore.sede.codigo" name="codigo" class="flex-auto" autocomplete="off" required/>

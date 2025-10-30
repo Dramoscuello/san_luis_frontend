@@ -2,10 +2,45 @@
 
 import Sidebar from "@/components/Sidebar.vue";
 import Header from "@/components/Header.vue";
+import Button from 'primevue/button';
+import Select from 'primevue/select';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 import {useSedesStore} from "@/stores/sedes.js";
+import {ref, onMounted} from 'vue';
+import {useUserStore} from "@/stores/user.js";
+import { useToast } from "primevue/usetoast";
 
 
 const stateSedes = useSedesStore();
+const selectedSede = ref(null);
+const currentPage = ref(0);
+const rowsPerPage = ref(10);
+const userStore = useUserStore();
+const toast = useToast();
+
+onMounted(async () => {
+  await userStore.getUsers();
+});
+
+const toggleActivo = async (usuario) => {
+  try{
+    await userStore.updateUserEstado({id: usuario.id, activo: !usuario.activo});
+  }catch (error) {
+    console.log(error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+  }
+};
+
+const crearUsuario = () => {
+  console.log('Crear usuario');
+  // Implementar lógica
+};
+
+const creacionMasiva = () => {
+  console.log('Creación masiva');
+  // Implementar lógica
+};
 
 </script>
 
@@ -21,39 +56,70 @@ const stateSedes = useSedesStore();
 
       <!-- Page Content -->
       <div class="p-8" id="panel-users">
-        <!-- Fila con 3 columnas -->
-        <div class="grid grid-cols-3 gap-4 mb-6">
-          <!-- Columna 1: Select -->
-          <div>
-            <label for="filter-sedes" class="block text-sm font-medium text-black mb-2 uppercase">
-              Filtrar por sedes
-            </label>
-            <form>
-              <select id="filter-sedes" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition duration-200 text-gray-700 font-medium cursor-pointer hover:border-gray-400">
-                <option value="">Seleccione...</option>
-                <option v-for="sede in stateSedes.sedes"
-                        :value="sede.id"
-                >
-                  {{sede.nombre}}
-                </option>
-              </select>
-            </form>
-          </div>
-
-          <!-- Columna 2: Botón Crear Usuario -->
-          <div>
-            <button class="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-500 hover:to-green-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition duration-200 shadow-md">
-              Crear usuario
-            </button>
-          </div>
-
-          <!-- Columna 3: Botón Creación Masiva -->
-          <div>
-            <button class="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-500 hover:to-green-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition duration-200 shadow-md">
-              Creación masiva
-            </button>
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-bold text-gray-800">Gestión de usuarios</h1>
+          <div class="flex gap-3">
+            <Button
+              label="Crear usuario"
+              icon="pi pi-user-plus"
+              severity="success"
+              @click="crearUsuario"
+            />
+            <Button
+              label="Creación masiva"
+              icon="pi pi-upload"
+              severity="info"
+              @click="creacionMasiva"
+            />
           </div>
         </div>
+
+        <!-- Filters Section -->
+        <div class="flex items-center gap-4 mb-6">
+          <label for="filter-sedes" class="text-sm font-semibold text-gray-700">
+            Filtrar por sede:
+          </label>
+          <Select
+            v-model="selectedSede"
+            :options="stateSedes.sedes"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccione una sede"
+            class="w-64"
+          />
+        </div>
+
+        <!-- DataTable -->
+        <DataTable
+          :value="userStore.users"
+          :paginator="true"
+          :rows="rowsPerPage"
+          :rowsPerPageOptions="[5, 10, 20, 50]"
+          v-model:first="currentPage"
+          sortMode="multiple"
+          tableStyle="min-width: 50rem"
+          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
+        >
+          <Column field="email" header="Email" :sortable="true"></Column>
+          <Column field="nombre" header="Nombre Completo" :sortable="true"></Column>
+          <Column field="cedula" header="Cédula" :sortable="true"></Column>
+          <Column field="rol" header="Rol" :sortable="true"></Column>
+          <Column field="sede_nombre" header="Sede" :sortable="true"></Column>
+          <Column field="telefono" header="Teléfono" :sortable="true"></Column>
+          <Column field="activo" header="Activo">
+            <template #body="slotProps">
+              <span
+                @click="toggleActivo(slotProps.data)"
+                :class="slotProps.data.activo ? 'bg-green-500' : 'bg-red-500'"
+                class="px-3 py-1 rounded-full text-white text-sm font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                {{ slotProps.data.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </template>
+          </Column>
+        </DataTable>
       </div>
     </main>
   </div>

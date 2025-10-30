@@ -1,7 +1,8 @@
 import {defineStore} from "pinia";
-import {reactive} from "vue";
+import {reactive, ref} from "vue";
 import {userService} from "@/services/userService.js";
 import {authService} from "@/services/auth.js";
+import {sedesService} from "@/services/sedesService.js";
 
 
 export const useUserStore = defineStore("user", () => {
@@ -13,6 +14,8 @@ export const useUserStore = defineStore("user", () => {
         activo: true,
         telefono: ''
     });
+
+    const users = ref([]);
 
     async function getUserLogged(){
         try{
@@ -29,9 +32,34 @@ export const useUserStore = defineStore("user", () => {
         }
     }
 
+    async function getUsers(){
+        try{
+            const {data} = await userService.getUsers();
+            users.value = data;
+        }catch(err){
+            throw err;
+        }
+    }
+
+    async function updateUserEstado(obj){
+        try{
+            await userService.updateUser(obj);
+            const i =  users.value.findIndex(item=> item.id === obj.id);
+
+            if (i > -1){
+                users.value[i].activo = obj.activo;
+            }
+        }catch(e){
+            throw e;
+        }
+    }
+
 
     return {
         user,
-        getUserLogged
+        getUserLogged,
+        getUsers,
+        users,
+        updateUserEstado,
     }
 });

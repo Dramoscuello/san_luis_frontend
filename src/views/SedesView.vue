@@ -91,9 +91,9 @@ const agregarNuevaSede = () => {
       <div class="p-8" id="sedes-table">
         <!-- Header Section -->
         <div class="flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-bold text-gray-800">Gestión de Sedes</h1>
+          <h1 class="text-2xl font-bold text-gray-800">Gestión de sedes</h1>
           <Button
-            label="Agregar Sede"
+            label="Agregar sede"
             icon="pi pi-plus"
             severity="success"
             @click="agregarNuevaSede"
