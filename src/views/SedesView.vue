@@ -9,6 +9,7 @@ import {useModalSedeStore} from "@/stores/modalSedes.js";
 import ModalSedes from "@/components/ModalSedes.vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
+import { confirmAlert } from "@/lib/confirm.js";
 
 
 const store = useSedesStore();
@@ -47,22 +48,18 @@ const eliminarSede = async (sede) => {
 };
 
 const confirmDeleteSede = (sede) => {
-  confirm.require({
-    message: '¿Estás seguro que deseas eliminar esta sede?',
-    header: 'Alerta',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: {
-      label: 'Cerrar',
-      severity: 'secondary',
-      outlined: true
-    },
-    acceptProps: {
-      label: 'Confirmar'
-    },
-    accept: () => {
-      eliminarSede(sede);
+  confirmAlert(
+    confirm,
+    `¿Estás seguro que deseas eliminar la sede "${sede.nombre}"?`,
+    () => eliminarSede(sede),
+    {
+      header: 'Eliminar Sede',
+      acceptProps: {
+        label: 'Eliminar',
+        severity: 'danger'
+      }
     }
-  });
+  );
 };
 
 const agregarNuevaSede = () => {

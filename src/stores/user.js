@@ -69,7 +69,6 @@ export const useUserStore = defineStore("user", () => {
 
     async function updateUser(){
         try{
-            console.log(user);
             await userService.updateUser(user);
             const i =  users.value.findIndex(item=> item.id === user.id);
 
@@ -89,6 +88,19 @@ export const useUserStore = defineStore("user", () => {
     }
 
 
+    async function deleteUser(id){
+        try{
+            await userService.deleteUser(id);
+            const i =  users.value.findIndex(item=> item.id === id);
+            if (i > -1){
+                users.value.splice(i, 1);
+            }
+        }catch(e){
+            throw e;
+        }
+    }
+
+
     return {
         userLogged,
         getUserLogged,
@@ -96,6 +108,7 @@ export const useUserStore = defineStore("user", () => {
         users,
         updateUserEstado,
         user,
-        updateUser
+        updateUser,
+        deleteUser
     }
 });

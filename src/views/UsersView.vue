@@ -8,17 +8,23 @@ import Column from 'primevue/column';
 import {ref, onMounted} from 'vue';
 import {useUserStore} from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import ModalUsers from "@/components/ModalUsers.vue";
 import {useModalUserStore} from "@/stores/modalUsers.js";
 import SelectSedes from "@/components/SelectSedes.vue";
 import {useSedesStore} from "@/stores/sedes.js";
+import {confirmAlert} from "@/lib/confirm.js";
+
+
 
 const currentPage = ref(0);
 const rowsPerPage = ref(10);
 const userStore = useUserStore();
 const toast = useToast();
+const confirm = useConfirm();
 const storeModalUser = useModalUserStore();
 const stateSedes = useSedesStore();
+
 
 onMounted(async () => {
   await userStore.getUsers();
@@ -43,8 +49,28 @@ const creacionMasiva = () => {
   // Implementar lógica
 };
 
-const eliminarUsuario = () => {
-  console.log('eliminar usuario');
+const eliminarUsuario = async (data) => {
+    try {
+      await userStore.deleteUser(data.id);
+    }catch (error) {
+      console.log(error);
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+    }
+}
+
+const confirmarDeleteUsuario = (data) => {
+  confirmAlert(
+    confirm,
+    `¿Estás seguro que deseas eliminar al usuario "${data.nombre_completo}"?`,
+    () => eliminarUsuario(data),
+    {
+      header: 'Eliminar Usuario',
+      acceptProps: {
+        label: 'Eliminar',
+        severity: 'danger'
+      }
+    }
+  );
 }
 
 const editarUsuario = (data) => {
@@ -145,7 +171,7 @@ const editarUsuario = (data) => {
                     icon="pi pi-trash"
                     class="p-button-rounded p-button-sm"
                     severity="danger"
-                    @click="eliminarUsuario(slotProps.data)"
+                    @click="confirmarDeleteUsuario(slotProps.data)"
                 />
               </div>
             </template>

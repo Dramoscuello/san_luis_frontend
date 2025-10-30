@@ -27,5 +27,14 @@ export const userService = {
         }catch(e){
             throw e;
         }
+    },
+
+    async deleteUser(id){
+        try {
+            const response = await api.delete(`/user/${id}`);
+            return response;
+        }catch (e) {
+            throw e;
+        }
     }
 }
