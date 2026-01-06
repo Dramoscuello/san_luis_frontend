@@ -1,13 +1,13 @@
 import Axios from "axios";
-import {authService} from "@/services/auth.js";
-import {useRouter} from "vue-router";
+import { authService } from "@/services/auth.js";
+import { useRouter } from "vue-router";
 
 const router = useRouter();
 
 
 
 const api = Axios.create({
-    baseURL : 'http://localhost:8000',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
