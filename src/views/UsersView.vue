@@ -5,7 +5,7 @@ import Header from "@/components/Header.vue";
 import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import {ref, onMounted} from 'vue';
+import {ref, onMounted, computed} from 'vue';
 import {useUserStore} from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -14,6 +14,8 @@ import {useModalUserStore} from "@/stores/modalUsers.js";
 import SelectSedes from "@/components/SelectSedes.vue";
 import {useSedesStore} from "@/stores/sedes.js";
 import {confirmAlert} from "@/lib/confirm.js";
+import FileUpload from 'primevue/fileupload';
+
 
 
 
@@ -24,7 +26,18 @@ const toast = useToast();
 const confirm = useConfirm();
 const storeModalUser = useModalUserStore();
 const stateSedes = useSedesStore();
+const isUploadMenuOpen = ref(false);
 
+const filteredUsers = computed(() => {
+    if (storeModalUser.visibleModalUser){
+      return userStore.users;
+    }else{
+      if (!stateSedes.selectedSede.id) {
+        return userStore.users;
+      }
+        return userStore.users.filter(user => user.sede_id === stateSedes.selectedSede.id);
+    } 
+});
 
 onMounted(async () => {
   await userStore.getUsers();
@@ -45,9 +58,8 @@ const crearUsuario = () => {
   storeModalUser.toggleModalUser();
 };
 
-const creacionMasiva = () => {
-  console.log('Creación masiva');
-  // Implementar lógica
+const toggleUploadMenu = () => {
+  isUploadMenuOpen.value = !isUploadMenuOpen.value;
 };
 
 const eliminarUsuario = async (data) => {
@@ -114,12 +126,36 @@ const editarUsuario = (data) => {
               severity="success"
               @click="crearUsuario"
             />
-            <Button
-              label="Creación masiva"
-              icon="pi pi-upload"
-              severity="info"
-              @click="creacionMasiva"
-            />
+            <div class="relative">
+              <Button
+                label="Creación masiva"
+                icon="pi pi-upload"
+                severity="info"
+                @click="toggleUploadMenu"
+              />
+
+              <!-- Menú desplegable de carga de archivos -->
+              <div
+                v-if="isUploadMenuOpen"
+                class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50"
+              >
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Subir archivo de usuarios</h3>
+                <div class="card flex flex-col gap-3">
+                  <FileUpload
+                    ref="fileupload"
+                    mode="basic"
+                    name="demo[]"
+                    url="/api/upload"
+                    accept=".xlsx"
+                    :maxFileSize="1048576"
+                    :multiple="false"
+                    @upload="onUpload"
+                    chooseLabel="Seleccionar archivo"
+                  />
+                  <Button label="Subir" @click="upload" severity="info" class="w-full" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -133,7 +169,7 @@ const editarUsuario = (data) => {
 
         <!-- DataTable -->
         <DataTable
-          :value="userStore.users"
+          :value="filteredUsers"
           :paginator="true"
           :rows="rowsPerPage"
           :rowsPerPageOptions="[5, 10, 20, 50]"

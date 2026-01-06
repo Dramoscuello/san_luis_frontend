@@ -1,10 +1,10 @@
-import {defineStore} from 'pinia'
-import {ref, reactive} from 'vue'
-import {loginService} from '../services/loginService.js'
-import {authService} from '../services/auth.js'
-import {useRouter} from 'vue-router'
+import { defineStore } from 'pinia'
+import { ref, reactive } from 'vue'
+import { loginService } from '../services/loginService.js'
+import { authService } from '../services/auth.js'
+import { useRouter } from 'vue-router'
 
-export const useLoginStore = defineStore('login', ()=>{
+export const useLoginStore = defineStore('login', () => {
     const data = reactive({
         username: '',
         password: ''

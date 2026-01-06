@@ -2,7 +2,6 @@ import {defineStore} from "pinia";
 import {reactive, ref} from "vue";
 import {userService} from "@/services/userService.js";
 import {authService} from "@/services/auth.js";
-import {sedesService} from "@/services/sedesService.js";
 
 
 export const useUserStore = defineStore("user", () => {
@@ -69,7 +68,6 @@ export const useUserStore = defineStore("user", () => {
 
     async function updateUser(){
         try{
-            // No enviamos password en la actualización
             const { password, ...userDataWithoutPassword } = user;
             await userService.updateUser(userDataWithoutPassword);
             const i =  users.value.findIndex(item=> item.id === user.id);
@@ -103,9 +101,7 @@ export const useUserStore = defineStore("user", () => {
     }
     async function createUser(){
         try{
-            // Solo enviamos password al crear usuario nuevo
             const {data} = await userService.createUser(user);
-            // Limpiamos el password inmediatamente por seguridad
             user.password = null;
             data.sede_nombre = user.sede_nombre;
             users.value.push(data);
@@ -114,10 +110,6 @@ export const useUserStore = defineStore("user", () => {
         }
     }
 
-    /**
-     * Resetea el objeto user a su estado inicial
-     * Útil para limpiar el formulario antes de crear/editar
-     */
     function resetUser() {
         user.id = null;
         user.email = '';

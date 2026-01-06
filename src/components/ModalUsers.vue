@@ -44,7 +44,7 @@ const actualizarUser = async () => {
 const crearUser = async () => {
   try{
     await storeUser.createUser();
-    toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario actualizado!', life: 3000 });
+    toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario creado!', life: 3000 });
   }catch (e){
     console.error(e);
     toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
