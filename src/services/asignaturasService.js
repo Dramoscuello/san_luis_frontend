@@ -45,5 +45,23 @@ export const asignaturasService = {
         } catch (e) {
             throw e;
         }
+    },
+
+    async asignarDocente(asignaturaId, docenteId) {
+        try {
+            const response = await api.post(`/asignaturas/${asignaturaId}/docentes`, { docente_id: docenteId });
+            return response;
+        } catch (e) {
+            throw e;
+        }
+    },
+
+    async desasignarDocente(asignaturaId, docenteId) {
+        try {
+            const response = await api.delete(`/asignaturas/${asignaturaId}/docentes/${docenteId}`);
+            return response;
+        } catch (e) {
+            throw e;
+        }
     }
 }

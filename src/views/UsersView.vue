@@ -22,7 +22,9 @@ import {useUserStore} from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import ModalUsers from "@/components/ModalUsers.vue";
+import ModalAssignAsignaturas from "@/components/ModalAssignAsignaturas.vue";
 import {useModalUserStore} from "@/stores/modalUsers.js";
+import {useModalAssignAsignaturasStore} from "@/stores/modalAssignAsignaturas.js";
 import SelectSedes from "@/components/SelectSedes.vue";
 import {useSedesStore} from "@/stores/sedes.js";
 import {confirmAlert} from "@/lib/confirm.js";
@@ -45,8 +47,13 @@ const userStore = useUserStore();
 const toast = useToast();
 const confirm = useConfirm();
 const storeModalUser = useModalUserStore();
+const storeModalAssign = useModalAssignAsignaturasStore();
 const stateSedes = useSedesStore();
 const isUploadMenuOpen = ref(false);
+
+const openAssignModal = (user) => {
+    storeModalAssign.openModal(user);
+};
 
 // NUEVO: Estado para carga masiva
 const selectedFile = ref(null);      // Archivo XLSX seleccionado
@@ -531,6 +538,20 @@ const upload = async () => {
               </span>
             </template>
           </Column>
+          <Column header="Asignaturas">
+            <template #body="slotProps">
+              <div v-if="slotProps.data.asignaturas && slotProps.data.asignaturas.length > 0" class="flex flex-wrap gap-1">
+                <span 
+                  v-for="asig in slotProps.data.asignaturas" 
+                  :key="asig.id"
+                  class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs border border-blue-200"
+                >
+                  {{ asig.nombre }}
+                </span>
+              </div>
+              <span v-else class="text-gray-400 italic text-sm">Sin asignaturas asignadas...</span>
+            </template>
+          </Column>
           <Column field="activo" header="Estado">
             <template #body="slotProps">
               <span
@@ -545,6 +566,14 @@ const upload = async () => {
           <Column header="Opciones">
             <template #body="slotProps">
               <div class="flex gap-2">
+                <Button
+                    v-if="slotProps.data.rol === 'docente'"
+                    icon="pi pi-list"
+                    class="p-button-rounded p-button-sm"
+                    severity="success"
+                    v-tooltip.top="'Agregar asignaturas'"
+                    @click="openAssignModal(slotProps.data)"
+                />
                 <Button
                     icon="pi pi-pencil"
                     class="p-button-rounded p-button-sm"
@@ -565,7 +594,9 @@ const upload = async () => {
     </main>
   </div>
 
+
   <ModalUsers/>
+  <ModalAssignAsignaturas/>
 </template>
 
 <style scoped>

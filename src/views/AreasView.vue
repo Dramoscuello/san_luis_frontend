@@ -328,6 +328,10 @@ onMounted(async () => {
                 <i class="pi pi-graduation-cap text-purple-500"></i>
                 <span class="text-sm">Grados: {{ asignatura.grados || 'Sin asignar' }}</span>
               </div>
+              <div class="flex items-center gap-2 text-gray-600 mb-2">
+                <i class="pi pi-users text-purple-500"></i>
+                <span class="text-sm">{{ asignatura.cantidad_docentes || 0 }} docente(s)</span>
+              </div>
               <div class="mt-3">
                 <span 
                   :class="asignatura.activa ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'"

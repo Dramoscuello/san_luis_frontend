@@ -45,6 +45,7 @@ const creacion = computed(()=>{
 const actualizarUser = async () => {
   try{
     await storeUser.updateUser();
+    await storeUser.getUsers(); // Recargar datos del servidor para verificar persistencia real
     toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario actualizado!', life: 3000 });
   }catch (e){
     console.error(e);

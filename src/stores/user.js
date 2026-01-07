@@ -1,36 +1,36 @@
-import {defineStore} from "pinia";
-import {reactive, ref} from "vue";
-import {userService} from "@/services/userService.js";
-import {authService} from "@/services/auth.js";
+import { defineStore } from "pinia";
+import { reactive, ref } from "vue";
+import { userService } from "@/services/userService.js";
+import { authService } from "@/services/auth.js";
 
 
 export const useUserStore = defineStore("user", () => {
     const userLogged = reactive({
-        email : '',
+        email: '',
         nombre_completo: '',
-        cedula : '',
+        cedula: '',
         rol: '',
         activo: true,
         telefono: ''
     });
 
     const user = reactive({
-        id:null,
-        email:'',
-        nombre_completo:'',
-        cedula:'',
-        rol:'',
-        activo:true,
-        telefono:'',
-        sede_id:null,
-        sede_nombre:'',
-        password:null
+        id: null,
+        email: '',
+        nombre_completo: '',
+        cedula: '',
+        rol: '',
+        activo: true,
+        telefono: '',
+        sede_id: null,
+        sede_nombre: '',
+        password: null
     });
 
     const users = ref([]);
 
-    async function getUserLogged(){
-        try{
+    async function getUserLogged() {
+        try {
             const username = await authService.getUser()
             const response = await userService.getInfoUserLogged(username)
             userLogged.email = response.email;
@@ -39,40 +39,54 @@ export const useUserStore = defineStore("user", () => {
             userLogged.rol = response.rol;
             userLogged.activo = Boolean(response.activo);
             userLogged.telefono = response.telefono;
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
     }
 
-    async function getUsers(){
-        try{
-            const {data} = await userService.getUsers();
+    async function getUsers() {
+        try {
+            const { data } = await userService.getUsers();
             users.value = data;
-        }catch(err){
+        } catch (err) {
             throw err;
         }
     }
 
-    async function updateUserEstado(obj){
-        try{
+    async function updateUserEstado(obj) {
+        try {
             await userService.updateUser(obj);
-            const i =  users.value.findIndex(item=> item.id === obj.id);
+            const i = users.value.findIndex(item => item.id === obj.id);
 
-            if (i > -1){
+            if (i > -1) {
                 users.value[i].activo = obj.activo;
             }
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
 
-    async function updateUser(){
-        try{
-            const { password, ...userDataWithoutPassword } = user;
-            await userService.updateUser(userDataWithoutPassword);
-            const i =  users.value.findIndex(item=> item.id === user.id);
+    async function updateUser() {
+        try {
+            // Crear una copia plana del objeto user para evitar problemas de reactividad
+            const userDataToSend = { ...user };
 
-            if (i > -1){
+            // Eliminar campos que no deben enviarse al backend o que son solo de vista
+            delete userDataToSend.password;
+            delete userDataToSend.sede_nombre;
+            delete userDataToSend.asignaturas; // Nuevo campo agregado para vista
+
+            // Asegurar que sede_id sea null si no tiene valor
+            if (!userDataToSend.sede_id) {
+                userDataToSend.sede_id = null;
+            }
+
+            // Llamar al servicio con el objeto limpio
+            await userService.updateUser(userDataToSend);
+
+            const i = users.value.findIndex(item => item.id === user.id);
+
+            if (i > -1) {
                 users.value[i].activo = user.activo;
                 users.value[i].nombre_completo = user.nombre_completo;
                 users.value[i].email = user.email;
@@ -82,30 +96,30 @@ export const useUserStore = defineStore("user", () => {
                 users.value[i].sede_nombre = user.sede_nombre;
                 users.value[i].cedula = user.cedula;
             }
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
 
 
-    async function deleteUser(id){
-        try{
+    async function deleteUser(id) {
+        try {
             await userService.deleteUser(id);
-            const i =  users.value.findIndex(item=> item.id === id);
-            if (i > -1){
+            const i = users.value.findIndex(item => item.id === id);
+            if (i > -1) {
                 users.value.splice(i, 1);
             }
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
-    async function createUser(){
-        try{
-            const {data} = await userService.createUser(user);
+    async function createUser() {
+        try {
+            const { data } = await userService.createUser(user);
             user.password = null;
             data.sede_nombre = user.sede_nombre;
             users.value.push(data);
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
