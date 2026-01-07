@@ -50,6 +50,13 @@ const selectedFile = ref(null);
 const isUploading = ref(false);
 
 const filteredUsers = computed(() => {
+    // Si el modal está abierto, mostramos todos (o mantenemos estado previo, pero mostramos todos impide que se vacíe si selecciono sede nueva)
+    // El problema real es que selectedSede cambia globalmente.
+    // Si el modal está abierto, ignoramos selectedSede para el filtrado de la tabla
+    if (storeModalUser.visibleModalUser) {
+        return userStore.docentes || [];
+    }
+
     let users = userStore.docentes || [];
     if (stateSedes.selectedSede && stateSedes.selectedSede.id) {
         return users.filter(user => user.sede_id === stateSedes.selectedSede.id);
@@ -341,7 +348,7 @@ const upload = async () => {
               <span v-else class="text-gray-400 italic text-sm">Sin asignaturas asignadas...</span>
             </template>
           </Column>
-          <Column header="Dirección">
+          <Column header="Dirección de grado">
             <template #body="slotProps">
               <div v-if="slotProps.data.grupos && slotProps.data.grupos.length > 0" class="flex flex-wrap gap-1">
                 <span 
@@ -368,33 +375,43 @@ const upload = async () => {
           </Column>
           <Column header="Opciones">
             <template #body="slotProps">
-              <div class="flex gap-2">
-                <Button
-                    icon="pi pi-users"
-                    class="p-button-rounded p-button-sm"
-                    severity="help"
-                    v-tooltip.top="'Asignar grupos'"
-                    @click="openAssignGruposModal(slotProps.data)"
-                />
-                <Button
-                    icon="pi pi-list"
-                    class="p-button-rounded p-button-sm"
-                    severity="success"
-                    v-tooltip.top="'Agregar asignaturas'"
-                    @click="openAssignModal(slotProps.data)"
-                />
-                <Button
-                    icon="pi pi-pencil"
-                    class="p-button-rounded p-button-sm"
-                    severity="info"
-                    @click="editarUsuario(slotProps.data)"
-                />
-                <Button
-                    icon="pi pi-trash"
-                    class="p-button-rounded p-button-sm"
-                    severity="danger"
-                    @click="confirmarDeleteUsuario(slotProps.data)"
-                />
+              <div class="flex items-center">
+                <!-- Grupo Asignación -->
+                <div class="flex gap-2">
+                  <Button
+                      icon="pi pi-users"
+                      class="p-button-rounded p-button-sm"
+                      severity="help"
+                      v-tooltip.top="'Asignar grupos'"
+                      @click="openAssignGruposModal(slotProps.data)"
+                  />
+                  <Button
+                      icon="pi pi-list"
+                      class="p-button-rounded p-button-sm p-button-outlined"
+                      style="color: #1d4ed8; border-color: #1d4ed8; background-color: #eff6ff;"
+                      v-tooltip.top="'Agregar asignaturas'"
+                      @click="openAssignModal(slotProps.data)"
+                  />
+                </div>
+
+                <!-- Separador -->
+                <div class="w-px h-6 bg-gray-300 mx-3"></div>
+
+                <!-- Grupo Edición -->
+                <div class="flex gap-2">
+                  <Button
+                      icon="pi pi-pencil"
+                      class="p-button-rounded p-button-sm"
+                      severity="info"
+                      @click="editarUsuario(slotProps.data)"
+                  />
+                  <Button
+                      icon="pi pi-trash"
+                      class="p-button-rounded p-button-sm"
+                      severity="danger"
+                      @click="confirmarDeleteUsuario(slotProps.data)"
+                  />
+                </div>
               </div>
             </template>
           </Column>

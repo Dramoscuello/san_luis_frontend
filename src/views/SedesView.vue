@@ -701,6 +701,10 @@ onMounted(async () => {
                 <i class="pi pi-users text-blue-500"></i>
                 <span class="text-sm">{{ grupo.cantidad_estudiantes || 0 }} estudiante(s)</span>
               </div>
+              <div class="flex items-center gap-2 text-gray-600 mt-2">
+                <i class="pi pi-user text-purple-500"></i>
+                <span class="text-sm font-medium">{{ grupo.director_grupo || 'Sin director asignado' }}</span>
+              </div>
             </div>
             
             <!-- Card Footer -->

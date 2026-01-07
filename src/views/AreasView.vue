@@ -235,20 +235,20 @@ onMounted(async () => {
             class="area-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-purple-600 px-4 py-4">
+            <div class="card-header bg-blue-600 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ area.nombre }}
               </h3>
             </div>
-            
+
             <!-- Card Body -->
             <div class="card-body p-4">
               <div class="flex items-center gap-2 text-gray-600 mb-2">
-                <i class="pi pi-info-circle text-purple-500"></i>
+                <i class="pi pi-info-circle text-blue-500"></i>
                 <span class="text-sm truncate">{{ area.descripcion || 'Sin descripción' }}</span>
               </div>
               <div class="flex items-center gap-2 text-gray-600">
-                <i class="pi pi-book text-purple-500"></i>
+                <i class="pi pi-book text-blue-500"></i>
                 <span class="text-sm">{{ getAsignaturasCount(area) }} asignatura(s)</span>
               </div>
               <div class="mt-3">
@@ -290,13 +290,13 @@ onMounted(async () => {
           </div>
 
           <!-- Add New Area Card -->
-          <div 
-            class="add-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-2 border-dashed border-gray-300 hover:border-purple-400 flex items-center justify-center min-h-[240px]"
+          <div
+            class="add-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-2 border-dashed border-gray-300 hover:border-blue-400 flex items-center justify-center min-h-[240px]"
             @click="agregarNuevaArea"
           >
             <div class="text-center">
-              <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <i class="pi pi-plus text-3xl text-purple-600"></i>
+              <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="pi pi-plus text-3xl text-blue-600"></i>
               </div>
               <span class="text-gray-500 font-medium">Agregar Área</span>
             </div>
@@ -312,24 +312,24 @@ onMounted(async () => {
             class="asignatura-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-purple-600 px-4 py-4">
+            <div class="card-header bg-blue-600 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ asignatura.nombre }}
               </h3>
             </div>
-            
+
             <!-- Card Body -->
             <div class="card-body p-4">
               <div class="flex items-center gap-2 text-gray-600 mb-2">
-                <i class="pi pi-info-circle text-purple-500"></i>
+                <i class="pi pi-info-circle text-blue-500"></i>
                 <span class="text-sm">{{ asignatura.descripcion || 'Sin descripción' }}</span>
               </div>
               <div class="flex items-center gap-2 text-gray-600 mb-2">
-                <i class="pi pi-graduation-cap text-purple-500"></i>
+                <i class="pi pi-graduation-cap text-blue-500"></i>
                 <span class="text-sm">Grados: {{ asignatura.grados || 'Sin asignar' }}</span>
               </div>
               <div class="flex items-center gap-2 text-gray-600 mb-2">
-                <i class="pi pi-users text-purple-500"></i>
+                <i class="pi pi-users text-blue-500"></i>
                 <span class="text-sm">{{ asignatura.cantidad_docentes || 0 }} docente(s)</span>
               </div>
               <div class="mt-3">
@@ -370,13 +370,13 @@ onMounted(async () => {
           </div>
 
           <!-- Add New Asignatura Card -->
-          <div 
-            class="add-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-2 border-dashed border-gray-300 hover:border-purple-400 flex items-center justify-center min-h-[220px]"
+          <div
+            class="add-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-2 border-dashed border-gray-300 hover:border-blue-400 flex items-center justify-center min-h-[220px]"
             @click="agregarNuevaAsignatura"
           >
             <div class="text-center">
-              <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <i class="pi pi-plus text-3xl text-purple-600"></i>
+              <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="pi pi-plus text-3xl text-blue-600"></i>
               </div>
               <span class="text-gray-500 font-medium">Agregar Asignatura</span>
             </div>

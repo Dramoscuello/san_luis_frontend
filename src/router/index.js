@@ -73,6 +73,12 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/periodos',
+            name: 'periodos',
+            component: () => import('../views/PeriodosView.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
             path: '/login',
             redirect: '/'
         }

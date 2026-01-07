@@ -28,7 +28,7 @@ const rolesComputed = computed(() => {
 });
 
 const requiresSede = computed(() => {
-    return storeUser.user.rol === 'docente';
+    return storeUser.user.rol === 'docente' || storeModalUser.isDocenteMode;
 });
 
 const HandleSubmit = ()=>{

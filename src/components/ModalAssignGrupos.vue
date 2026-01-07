@@ -67,7 +67,8 @@ watch(selectedGrado, async (newGrado) => {
         loadingGrupos.value = true;
         try {
             const data = await gruposService.getGruposByGrado(newGrado.id);
-            gruposList.value = data;
+            // Filtrar solo los que NO tienen director asignado
+            gruposList.value = data.filter(g => !g.director_grupo);
         } catch (error) {
             console.error(error);
         } finally {
