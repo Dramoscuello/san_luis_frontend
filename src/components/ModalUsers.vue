@@ -20,11 +20,23 @@ const roles = ref([
     {name: 'Docente', value: 'docente'}
 ]);
 
+const rolesComputed = computed(() => {
+    if (storeModalUser.isDirectivoMode) {
+        return roles.value.filter(r => r.value !== 'docente');
+    }
+    return roles.value;
+});
+
 const requiresSede = computed(() => {
     return storeUser.user.rol === 'docente';
 });
 
 const HandleSubmit = ()=>{
+  // Modo docente forzado
+  if (storeModalUser.isDocenteMode && !storeUser.user.id) {
+      storeUser.user.rol = 'docente';
+  }
+
   // Si no requiere sede (rector/coordinador), limpiamos el valor
   if (!requiresSede.value) {
     storeUser.user.sede_id = null;
@@ -101,12 +113,12 @@ const crearUser = async () => {
         <InputText id="telefono" v-model="storeUser.user.telefono" name="telefono" class="flex-auto" autocomplete="off" required/>
       </div>
 
-      <div class="flex items-center gap-4 mb-4">
+      <div class="flex items-center gap-4 mb-4" v-if="!storeModalUser.isDocenteMode">
         <label for="rol" class="font-semibold w-24">Rol</label>
         <Dropdown 
             id="rol" 
             v-model="storeUser.user.rol" 
-            :options="roles" 
+            :options="rolesComputed" 
             optionLabel="name" 
             optionValue="value" 
             placeholder="Seleccione un rol" 

@@ -5,11 +5,12 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import { useToast } from "primevue/usetoast";
+import { useSedesStore } from "@/stores/sedes.js";
 
 const store = useModalGradoStore();
 const gradoStore = useGradosStore();
+const sedesStore = useSedesStore(); // Nuevo
 const toast = useToast();
-
 
 const HandleSubmit = () => {
     if (gradoStore.grado.id) {
@@ -22,6 +23,7 @@ const HandleSubmit = () => {
 const crearGrado = async () => {
     try {
         await gradoStore.crearGrado();
+        await sedesStore.getSedes(); // Refrescar sedes
         toast.add({ severity: 'success', summary: 'OK', detail: '¡Grado creado!', life: 3000 });
         store.toggleModalGrado();
     } catch (err) {
@@ -34,6 +36,7 @@ const crearGrado = async () => {
 const actualizarGrado = async () => {
     try {
         await gradoStore.updateGrado();
+        await sedesStore.getSedes(); // Refrescar sedes (por si acaso cambia algo relevante)
         toast.add({ severity: 'success', summary: 'OK', detail: '¡Grado actualizado!', life: 3000 });
         store.toggleModalGrado();
     } catch (err) {

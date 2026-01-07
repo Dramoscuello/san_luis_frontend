@@ -44,5 +44,23 @@ export const gruposService = {
         } catch (e) {
             throw e;
         }
+    },
+
+    async asignarDirector(grupoId, docenteId) {
+        try {
+            const response = await api.post(`/grupos/${grupoId}/directores`, { docente_id: docenteId });
+            return response;
+        } catch (e) {
+            throw e;
+        }
+    },
+
+    async desasignarDirector(grupoId, docenteId) {
+        try {
+            const response = await api.delete(`/grupos/${grupoId}/directores/${docenteId}`);
+            return response;
+        } catch (e) {
+            throw e;
+        }
     }
 }

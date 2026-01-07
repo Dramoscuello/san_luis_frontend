@@ -96,6 +96,37 @@ export const useUserStore = defineStore("user", () => {
                 users.value[i].sede_nombre = user.sede_nombre;
                 users.value[i].cedula = user.cedula;
             }
+
+            // Actualizar también la lista de directivos si existe
+            const j = directivos.value.findIndex(item => item.id === user.id);
+            if (j > -1) {
+                Object.assign(directivos.value[j], {
+                    activo: user.activo,
+                    nombre_completo: user.nombre_completo,
+                    email: user.email,
+                    telefono: user.telefono,
+                    rol: user.rol,
+                    sede_id: user.sede_id,
+                    cedula: user.cedula
+                });
+            }
+
+            // Actualizar lista de docentes
+            const k = docentes.value.findIndex(item => item.id === user.id);
+            if (k > -1) {
+                Object.assign(docentes.value[k], {
+                    activo: user.activo,
+                    nombre_completo: user.nombre_completo,
+                    email: user.email,
+                    telefono: user.telefono,
+                    rol: user.rol,
+                    sede_id: user.sede_id,
+                    sede_nombre: user.sede_nombre,
+                    cedula: user.cedula,
+                    // Si se actualizan asignaturas/grupos, también deberían refrescarse aquí
+                    // Pero updateUser solo envía info plana. Para refrescar relaciones complejas mejor recargar.
+                });
+            }
         } catch (e) {
             throw e;
         }
@@ -139,11 +170,36 @@ export const useUserStore = defineStore("user", () => {
 
 
 
+    const directivos = ref([]);
+    const docentes = ref([]); // Nuevo
+
+    async function getDirectivos() {
+        try {
+            const data = await userService.getDirectivos();
+            directivos.value = data;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    async function getDocentes() {
+        try {
+            const data = await userService.getDocentes();
+            docentes.value = data;
+        } catch (err) {
+            throw err;
+        }
+    }
+
     return {
         userLogged,
         getUserLogged,
         getUsers,
         users,
+        directivos,
+        docentes, // Nuevo
+        getDirectivos,
+        getDocentes, // Nuevo
         updateUserEstado,
         user,
         updateUser,

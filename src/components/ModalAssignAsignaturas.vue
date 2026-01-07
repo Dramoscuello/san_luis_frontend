@@ -75,7 +75,7 @@ const handleSave = async () => {
             await Promise.all(promesas);
             toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Asignaciones actualizadas correctamente', life: 3000 });
             // Refrescar lista de usuarios para ver cambios
-            await userStore.getUsers();
+            await userStore.getDocentes();
         } else {
             toast.add({ severity: 'info', summary: 'Sin cambios', detail: 'No hubo cambios en las asignaciones', life: 3000 });
         }
