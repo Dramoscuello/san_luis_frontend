@@ -94,6 +94,7 @@ const crearAsignatura = async () => {
             asignaturaStore.asignaturas[i].grados = selectedGrados.value.join(',');
         }
         toast.add({ severity: 'info', summary: 'OK', detail: '¡Asignatura creada!', life: 3000 });
+        store.executeOnSaveCallback();
         closeModal();
     } catch (err) {
         console.log(err);
@@ -115,6 +116,7 @@ const actualizarAsignatura = async () => {
             asignaturaStore.asignaturas[i].grados = selectedGrados.value.join(',');
         }
         toast.add({ severity: 'info', summary: 'OK', detail: '¡Asignatura actualizada!', life: 3000 });
+        store.executeOnSaveCallback();
         closeModal();
     } catch (err) {
         console.log(err);

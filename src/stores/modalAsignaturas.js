@@ -10,6 +10,9 @@ export const useModalAsignaturaStore = defineStore("modalAsignatura", () => {
         nombre: null
     });
 
+    // Callback para ejecutar después de guardar
+    let onSaveCallback = null;
+
     function toggleModalAsignatura() {
         visibleModalAsignatura.value = !visibleModalAsignatura.value;
     }
@@ -19,10 +22,22 @@ export const useModalAsignaturaStore = defineStore("modalAsignatura", () => {
         savedFilter.nombre = nombre;
     }
 
+    function setOnSaveCallback(callback) {
+        onSaveCallback = callback;
+    }
+
+    function executeOnSaveCallback() {
+        if (onSaveCallback) {
+            onSaveCallback();
+        }
+    }
+
     return {
         visibleModalAsignatura,
         savedFilter,
         toggleModalAsignatura,
         saveFilter,
+        setOnSaveCallback,
+        executeOnSaveCallback
     }
 })

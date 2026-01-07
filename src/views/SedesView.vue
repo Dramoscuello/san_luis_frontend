@@ -95,6 +95,15 @@ const editarSede = (sede) => {
   storeModalSedes.toggleModalSede();
 };
 
+const toggleActivo = async (sede) => {
+  try {
+    await sedesStore.updateEstado({ id: sede.id, activa: !sede.activa });
+  } catch (error) {
+    console.log(error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+  }
+};
+
 const eliminarSede = async (sede) => {
   try {
     await sedesStore.deleteSede(sede.id);
@@ -297,8 +306,9 @@ onMounted(async () => {
               </div>
               <div class="mt-3">
                 <span 
-                  :class="sede.activa ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                  class="px-3 py-1 rounded-full text-xs font-semibold"
+                  :class="sede.activa ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'"
+                  class="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors"
+                  @click="toggleActivo(sede)"
                 >
                   {{ sede.activa ? 'Activa' : 'Inactiva' }}
                 </span>
@@ -324,9 +334,10 @@ onMounted(async () => {
               <Button
                 icon="pi pi-arrow-right"
                 class="p-button-rounded p-button-sm p-button-text"
-                severity="success"
+                :severity="sede.activa ? 'success' : 'secondary'"
+                :disabled="!sede.activa"
                 @click="navigateToGrados(sede)"
-                v-tooltip.top="'Ver grados'"
+                v-tooltip.top="sede.activa ? 'Ver grados' : 'Sede inactiva'"
               />
             </div>
           </div>

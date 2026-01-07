@@ -10,6 +10,15 @@ export const asignaturasService = {
         }
     },
 
+    async getAsignaturasByArea(areaId) {
+        try {
+            const { data } = await api.get(`/asignaturas?area_id=${areaId}`);
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     async updateAsignatura(obj) {
         try {
             const response = await api.patch(`/asignaturas/${obj.id}`, obj);

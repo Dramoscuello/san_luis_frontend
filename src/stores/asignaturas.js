@@ -21,6 +21,19 @@ export const useAsignaturasStore = defineStore('asignaturas', () => {
         }
     }
 
+    async function getAsignaturasByArea(areaId) {
+        try {
+            asignaturas.value = await asignaturasService.getAsignaturasByArea(areaId);
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    }
+
+    function clearAsignaturas() {
+        asignaturas.value = [];
+    }
+
     async function updateEstado(obj) {
         try {
             await asignaturasService.updateAsignatura(obj);
@@ -87,6 +100,8 @@ export const useAsignaturasStore = defineStore('asignaturas', () => {
         asignatura,
         asignaturas,
         getAsignaturas,
+        getAsignaturasByArea,
+        clearAsignaturas,
         updateEstado,
         updateAsignatura,
         deleteAsignatura,
