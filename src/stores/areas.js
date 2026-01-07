@@ -7,7 +7,13 @@ export const useAreasStore = defineStore('areas', () => {
     const area = reactive({
         id: null,
         nombre: '',
+        descripcion: '',
         activa: true
+    });
+
+    const selectedArea = reactive({
+        id: null,
+        nombre: null
     });
 
     async function getAreas() {
@@ -38,6 +44,7 @@ export const useAreasStore = defineStore('areas', () => {
 
             if (i > -1) {
                 areas.value[i].nombre = area.nombre;
+                areas.value[i].descripcion = area.descripcion;
                 areas.value[i].activa = area.activa;
             }
         } catch (e) {
@@ -67,13 +74,20 @@ export const useAreasStore = defineStore('areas', () => {
         }
     }
 
+    function clearSelectedArea() {
+        selectedArea.id = null;
+        selectedArea.nombre = null;
+    }
+
     return {
         area,
         areas,
+        selectedArea,
         getAreas,
         updateEstado,
         updateArea,
         deleteArea,
-        crearArea
+        crearArea,
+        clearSelectedArea
     }
 });

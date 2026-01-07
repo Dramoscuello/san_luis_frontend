@@ -32,6 +32,7 @@ const toggleActivo = async (area) => {
 
 const editarArea = (area) => {
     store.area.nombre = area.nombre;
+    store.area.descripcion = area.descripcion || '';
     store.area.id = area.id;
     store.area.activa = area.activa;
     storeModalAreas.toggleModalArea();
@@ -63,6 +64,7 @@ const confirmDeleteArea = (area) => {
 
 const agregarNuevaArea = () => {
     store.area.nombre = '';
+    store.area.descripcion = '';
     store.area.id = null;
     store.area.activa = true;
     storeModalAreas.toggleModalArea();
@@ -94,6 +96,13 @@ const agregarNuevaArea = () => {
 
                 <DataTable :value="store.areas" :paginator="false" tableStyle="min-width: 50rem">
                     <Column field="nombre" header="Área"></Column>
+                    <Column field="descripcion" header="Descripción">
+                        <template #body="slotProps">
+                            <span :class="{ 'text-gray-400 italic': !slotProps.data.descripcion }">
+                                {{ slotProps.data.descripcion || 'Sin descripción...' }}
+                            </span>
+                        </template>
+                    </Column>
                     <Column field="activa" header="Activo">
                         <template #body="slotProps">
                             <span

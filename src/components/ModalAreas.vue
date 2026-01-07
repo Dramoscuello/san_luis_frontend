@@ -48,6 +48,10 @@ const actualizarArea = async () => {
                 <label for="nombre" class="font-semibold w-24">Nombre</label>
                 <InputText id="nombre" v-model="areaStore.area.nombre" name="nombre" class="flex-auto" autocomplete="off" required />
             </div>
+            <div class="flex items-center gap-4 mb-4">
+                <label for="descripcion" class="font-semibold w-24">Descripción</label>
+                <InputText id="descripcion" v-model="areaStore.area.descripcion" name="descripcion" class="flex-auto" autocomplete="off" />
+            </div>
 
             <div class="flex justify-end gap-2">
                 <Button type="button" label="Cerrar" severity="secondary" @click="store.visibleModalArea = false"></Button>

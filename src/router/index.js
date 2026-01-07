@@ -45,7 +45,7 @@ const router = createRouter({
         {
             path: '/asignaturas',
             name: 'asignaturas',
-            component: () => import('../views/HomeView.vue'), // Placeholder
+            component: () => import('../views/AsignaturasView.vue'),
             meta: { requiresAuth: true }
         },
         {
