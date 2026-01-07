@@ -3,37 +3,59 @@ import { ref, computed, onMounted } from "vue";
 import Header from "@/components/Header.vue";
 import Sidebar from "@/components/Sidebar.vue";
 import Button from 'primevue/button';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import FileUpload from 'primevue/fileupload';
 import { useSedesStore } from "@/stores/sedes.js";
 import { useGradosStore } from "@/stores/grados.js";
 import { useGruposStore } from "@/stores/grupos.js";
+import { useEstudiantesStore } from "@/stores/estudiantes.js";
 import { useModalSedeStore } from "@/stores/modalSedes.js";
 import { useModalGradoStore } from "@/stores/modalGrados.js";
 import { useModalGrupoStore } from "@/stores/modalGrupos.js";
+import { useModalEstudianteStore } from "@/stores/modalEstudiantes.js";
 import ModalSedes from "@/components/ModalSedes.vue";
 import ModalGrados from "@/components/ModalGrados.vue";
 import ModalGrupos from "@/components/ModalGrupos.vue";
+import ModalEstudiantes from "@/components/ModalEstudiantes.vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
+
+// Librería para leer archivos Excel (.xlsx)
+import * as XLSX from 'xlsx';
+
+// Servicio para carga masiva
+import { estudiantesService } from "@/services/estudiantesService.js";
 
 // Stores
 const sedesStore = useSedesStore();
 const gradosStore = useGradosStore();
 const gruposStore = useGruposStore();
+const estudiantesStore = useEstudiantesStore();
 const storeModalSedes = useModalSedeStore();
 const storeModalGrados = useModalGradoStore();
 const storeModalGrupos = useModalGrupoStore();
+const storeModalEstudiantes = useModalEstudianteStore();
 const toast = useToast();
 const confirm = useConfirm();
 
 // Navigation state
-const currentView = ref('sedes'); // 'sedes' | 'grados' | 'grupos'
+const currentView = ref('sedes'); // 'sedes' | 'grados' | 'grupos' | 'estudiantes'
 const selectedSede = ref(null);
 const selectedGrado = ref(null);
+const selectedGrupo = ref(null);
+
+// Estado para carga masiva de estudiantes
+const selectedFile = ref(null);
+const isUploading = ref(false);
+const isUploadMenuOpen = ref(false);
 
 // Page title
 const pageTitle = computed(() => {
-  if (currentView.value === 'grupos') {
+  if (currentView.value === 'estudiantes') {
+    return `Estudiantes del grupo ${selectedGrupo.value?.nombre}`;
+  } else if (currentView.value === 'grupos') {
     return `Grupos de ${selectedGrado.value?.nombre}`;
   } else if (currentView.value === 'grados') {
     return `Grados de ${selectedSede.value?.nombre}`;
@@ -46,15 +68,19 @@ const navigateToSedes = () => {
   currentView.value = 'sedes';
   selectedSede.value = null;
   selectedGrado.value = null;
+  selectedGrupo.value = null;
   gradosStore.clearGrados();
   gruposStore.clearGrupos();
+  estudiantesStore.clearEstudiantes();
 };
 
 const navigateToGrados = async (sede) => {
   selectedSede.value = sede;
   selectedGrado.value = null;
+  selectedGrupo.value = null;
   currentView.value = 'grados';
   gruposStore.clearGrupos();
+  estudiantesStore.clearEstudiantes();
   
   try {
     await gradosStore.getGradosBySede(sede.id);
@@ -66,13 +92,27 @@ const navigateToGrados = async (sede) => {
 
 const navigateToGrupos = async (grado) => {
   selectedGrado.value = grado;
+  selectedGrupo.value = null;
   currentView.value = 'grupos';
+  estudiantesStore.clearEstudiantes();
   
   try {
     await gruposStore.getGruposByGrado(grado.id);
   } catch (error) {
     console.error(error);
     toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los grupos', life: 3000 });
+  }
+};
+
+const navigateToEstudiantes = async (grupo) => {
+  selectedGrupo.value = grupo;
+  currentView.value = 'estudiantes';
+  
+  try {
+    await estudiantesStore.getEstudiantesByGrupo(grupo.id);
+  } catch (error) {
+    console.error(error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los estudiantes', life: 3000 });
   }
 };
 
@@ -207,6 +247,208 @@ const confirmDeleteGrupo = (grupo) => {
   );
 };
 
+// ============ ESTUDIANTES FUNCTIONS ============
+const agregarNuevoEstudiante = () => {
+  estudiantesStore.clearEstudiante();
+  estudiantesStore.estudiante.grupo_id = selectedGrupo.value.id;
+  storeModalEstudiantes.toggleModalEstudiante();
+};
+
+const editarEstudiante = (estudiante) => {
+  estudiantesStore.estudiante.numero_documento = estudiante.numero_documento;
+  estudiantesStore.estudiante.nombres = estudiante.nombres;
+  estudiantesStore.estudiante.apellidos = estudiante.apellidos;
+  estudiantesStore.estudiante.id = estudiante.id;
+  estudiantesStore.estudiante.grupo_id = estudiante.grupo_id;
+  storeModalEstudiantes.toggleModalEstudiante();
+};
+
+const eliminarEstudiante = async (estudiante) => {
+  try {
+    await estudiantesStore.deleteEstudiante(estudiante.id);
+    toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Estudiante eliminado correctamente', life: 3000 });
+  } catch (error) {
+    console.log(error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+  }
+};
+
+const confirmDeleteEstudiante = (estudiante) => {
+  confirmAlert(
+    confirm,
+    `¿Estás seguro que deseas eliminar al estudiante "${estudiante.nombres} ${estudiante.apellidos}"?`,
+    () => eliminarEstudiante(estudiante),
+    {
+      header: 'Eliminar Estudiante',
+      acceptProps: {
+        label: 'Eliminar',
+        severity: 'danger'
+      }
+    }
+  );
+};
+
+// ============ CARGA MASIVA DE ESTUDIANTES ============
+const toggleUploadMenu = () => {
+  isUploadMenuOpen.value = !isUploadMenuOpen.value;
+  if (!isUploadMenuOpen.value) {
+    selectedFile.value = null;
+  }
+};
+
+const onFileSelect = (event) => {
+  selectedFile.value = event.files[0];
+};
+
+const readXLSXFile = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const firstSheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+        resolve(jsonData);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+const processEstudiantes = async (estudiantesData) => {
+  const result = { 
+    success: 0,
+    errors: []
+  };
+  
+  for (let i = 0; i < estudiantesData.length; i++) {
+    const row = estudiantesData[i];
+    const rowNumber = i + 2;
+    
+    try {
+      const numero_documento = row.numero_documento || row.Numero_Documento || row.NUMERO_DOCUMENTO || row.documento || row.Documento;
+      const nombres = row.nombres || row.Nombres || row.NOMBRES;
+      const apellidos = row.apellidos || row.Apellidos || row.APELLIDOS;
+      
+      const estudianteData = {
+        numero_documento: numero_documento ? String(numero_documento).trim() : undefined,
+        nombres: nombres ? String(nombres).trim() : undefined,
+        apellidos: apellidos ? String(apellidos).trim() : undefined,
+        grupo_id: selectedGrupo.value.id
+      };
+      
+      const camposFaltantes = [];
+      if (!estudianteData.numero_documento) camposFaltantes.push('numero_documento');
+      if (!estudianteData.nombres) camposFaltantes.push('nombres');
+      if (!estudianteData.apellidos) camposFaltantes.push('apellidos');
+      
+      if (camposFaltantes.length > 0) {
+        throw new Error(`Fila ${rowNumber}: Campos faltantes: ${camposFaltantes.join(', ')}`);
+      }
+      
+      const { data } = await estudiantesService.createEstudiante(estudianteData);
+      estudiantesStore.estudiantes.push(data);
+      result.success++;
+      
+    } catch (error) {
+      let errorMessage = 'Error desconocido';
+      
+      if (error.response?.data) {
+        const backendError = error.response.data;
+        if (typeof backendError === 'string') {
+          errorMessage = backendError;
+        } else if (backendError.detail) {
+          errorMessage = typeof backendError.detail === 'string' 
+            ? backendError.detail 
+            : JSON.stringify(backendError.detail);
+        } else {
+          errorMessage = JSON.stringify(backendError);
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      result.errors.push({
+        fila: rowNumber,
+        documento: row.numero_documento || row.Numero_Documento || 'N/A',
+        error: errorMessage
+      });
+    }
+  }
+  
+  return result;
+};
+
+const uploadEstudiantes = async () => {
+  if (!selectedFile.value) {
+    toast.add({ 
+      severity: 'warn', 
+      summary: 'Archivo requerido', 
+      detail: 'Por favor seleccione un archivo XLSX', 
+      life: 3000 
+    });
+    return;
+  }
+
+  isUploading.value = true;
+  
+  try {
+    const data = await readXLSXFile(selectedFile.value);
+    
+    if (data.length === 0) {
+      toast.add({ 
+        severity: 'warn', 
+        summary: 'Archivo vacío', 
+        detail: 'El archivo no contiene datos para procesar', 
+        life: 3000 
+      });
+      return;
+    }
+
+    const result = await processEstudiantes(data);
+    
+    if (result.success > 0) {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Estudiantes creados', 
+        detail: `Se crearon ${result.success} estudiante(s) exitosamente`, 
+        life: 5000 
+      });
+    }
+    
+    if (result.errors.length > 0) {
+      toast.add({ 
+        severity: 'warn', 
+        summary: 'Algunos errores', 
+        detail: `${result.errors.length} registro(s) no pudieron crearse. Ver consola para detalles.`, 
+        life: 5000 
+      });
+      console.log('❌ Errores en carga masiva:', result.errors);
+    }
+
+    isUploadMenuOpen.value = false;
+    selectedFile.value = null;
+    
+  } catch (error) {
+    console.error('Error procesando archivo:', error);
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Error', 
+      detail: 'Error al procesar el archivo. Verifique el formato.', 
+      life: 3000 
+    });
+  } finally {
+    isUploading.value = false;
+  }
+};
+
 // Count functions for cards
 const getGradosCount = (sede) => {
   return sede.cantidad_grados || 0;
@@ -250,11 +492,11 @@ onMounted(async () => {
               <span class="font-medium">Sedes</span>
             </a>
 
-            <!-- Separator + Sede Name (when in grados or grupos) -->
+            <!-- Separator + Sede Name -->
             <template v-if="selectedSede">
               <span class="mx-2 text-gray-400">/</span>
               <a 
-                v-if="currentView === 'grupos'"
+                v-if="currentView !== 'grados'"
                 class="text-blue-600 hover:text-blue-800 cursor-pointer font-medium transition-colors"
                 @click="navigateToGrados(selectedSede)"
               >
@@ -265,11 +507,26 @@ onMounted(async () => {
               </span>
             </template>
 
-            <!-- Separator + Grado Name (when in grupos) -->
+            <!-- Separator + Grado Name -->
             <template v-if="selectedGrado">
               <span class="mx-2 text-gray-400">/</span>
-              <span class="text-gray-800 font-medium">
+              <a 
+                v-if="currentView !== 'grupos'"
+                class="text-blue-600 hover:text-blue-800 cursor-pointer font-medium transition-colors"
+                @click="navigateToGrupos(selectedGrado)"
+              >
                 {{ selectedGrado.nombre }}
+              </a>
+              <span v-else class="text-gray-800 font-medium">
+                {{ selectedGrado.nombre }}
+              </span>
+            </template>
+
+            <!-- Separator + Grupo Name -->
+            <template v-if="selectedGrupo">
+              <span class="mx-2 text-gray-400">/</span>
+              <span class="text-gray-800 font-medium">
+                {{ selectedGrupo.nombre }}
               </span>
             </template>
           </nav>
@@ -435,8 +692,11 @@ onMounted(async () => {
             </div>
             
             <!-- Card Body -->
-            <div class="card-body p-4 flex items-center justify-center">
-              <span class="text-gray-500 text-sm">Grupo {{ grupo.nombre }}</span>
+            <div class="card-body p-4">
+              <div class="flex items-center gap-2 text-gray-600">
+                <i class="pi pi-users text-blue-500"></i>
+                <span class="text-sm">{{ grupo.cantidad_estudiantes || 0 }} estudiante(s)</span>
+              </div>
             </div>
             
             <!-- Card Footer -->
@@ -458,9 +718,9 @@ onMounted(async () => {
               <Button
                 icon="pi pi-arrow-right"
                 class="p-button-rounded p-button-sm p-button-text"
-                severity="secondary"
-                disabled
-                v-tooltip.top="'Próximamente'"
+                severity="success"
+                @click="navigateToEstudiantes(grupo)"
+                v-tooltip.top="'Ver estudiantes'"
               />
             </div>
           </div>
@@ -479,7 +739,135 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Empty State -->
+        <!-- ============ ESTUDIANTES VIEW (DataTable) ============ -->
+        <div v-if="currentView === 'estudiantes'">
+          <!-- Header with actions -->
+          <div class="flex justify-end items-center mb-4 gap-2">
+            <Button
+              label="Agregar estudiante"
+              icon="pi pi-plus"
+              severity="success"
+              @click="agregarNuevoEstudiante"
+            />
+            
+            <div class="relative">
+              <Button
+                label="Carga masiva"
+                icon="pi pi-upload"
+                severity="info"
+                @click="toggleUploadMenu"
+              />
+
+              <!-- Menú desplegable de carga de archivos -->
+              <div
+                v-if="isUploadMenuOpen"
+                class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50"
+              >
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-semibold text-gray-700">Subir listado (.xlsx)</h3>
+                    <Button 
+                        icon="pi pi-times" 
+                        class="p-button-rounded p-button-text p-button-sm text-gray-500" 
+                        @click="toggleUploadMenu"
+                    />
+                </div>
+                
+                <div class="card flex flex-col gap-3">
+                  <FileUpload
+                    ref="fileupload"
+                    mode="basic"
+                    name="file"
+                    accept=".xlsx"
+                    :maxFileSize="1048576"
+                    :multiple="false"
+                    :auto="false"
+                    @select="onFileSelect"
+                    chooseLabel="Seleccionar archivo"
+                    class="w-full"
+                  />
+                  
+                  <span v-if="selectedFile" class="text-xs text-green-600 block truncate">
+                    📄 {{ selectedFile.name }}
+                  </span>
+                  
+                  <Button 
+                    label="Procesar estudiantes" 
+                    @click="uploadEstudiantes" 
+                    severity="primary" 
+                    class="w-full"
+                    :loading="isUploading"
+                    :disabled="!selectedFile || isUploading"
+                    icon="pi pi-check"
+                  />
+                  
+                  <div class="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+                    <p class="font-semibold mb-1">Formato requerido:</p>
+                    <ul class="list-disc pl-4 space-y-0.5">
+                        <li>numero_documento</li>
+                        <li>nombres</li>
+                        <li>apellidos</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DataTable -->
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <DataTable 
+              :value="estudiantesStore.estudiantes" 
+              :paginator="true"
+              :rows="10"
+              :rowsPerPageOptions="[5, 10, 20, 50]"
+              tableStyle="min-width: 50rem"
+              stripedRows
+              :globalFilterFields="['numero_documento', 'nombres', 'apellidos']"
+            >
+              <template #empty>
+                <div class="text-center py-8">
+                  <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="pi pi-users text-3xl text-gray-400"></i>
+                  </div>
+                  <p class="text-gray-500">No hay estudiantes registrados en este grupo</p>
+                  <Button 
+                    label="Agregar primer estudiante" 
+                    icon="pi pi-plus" 
+                    severity="success" 
+                    class="mt-4"
+                    @click="agregarNuevoEstudiante"
+                  />
+                </div>
+              </template>
+              
+              <Column field="numero_documento" header="N° Documento" sortable style="width: 20%"></Column>
+              <Column field="nombres" header="Nombres" sortable style="width: 30%"></Column>
+              <Column field="apellidos" header="Apellidos" sortable style="width: 30%"></Column>
+              <Column header="Opciones" style="width: 20%">
+                <template #body="slotProps">
+                  <div class="flex gap-2">
+                    <Button
+                      icon="pi pi-pencil"
+                      class="p-button-rounded p-button-sm"
+                      severity="info"
+                      @click="editarEstudiante(slotProps.data)"
+                      v-tooltip.top="'Editar'"
+                    />
+                    <Button
+                      icon="pi pi-trash"
+                      class="p-button-rounded p-button-sm"
+                      severity="danger"
+                      @click="confirmDeleteEstudiante(slotProps.data)"
+                      v-tooltip.top="'Eliminar'"
+                    />
+                  </div>
+                </template>
+              </Column>
+            </DataTable>
+          </div>
+        </div>
+
+        <!-- Empty State for cards -->
         <div 
           v-if="(currentView === 'grados' && gradosStore.grados.length === 0) || 
                 (currentView === 'grupos' && gruposStore.grupos.length === 0)"
@@ -503,6 +891,7 @@ onMounted(async () => {
   <ModalSedes />
   <ModalGrados />
   <ModalGrupos />
+  <ModalEstudiantes />
 </template>
 
 <style scoped>
@@ -521,16 +910,5 @@ onMounted(async () => {
 .add-card:hover .pi-plus {
   transform: scale(1.1);
   transition: transform 0.2s ease;
-}
-
-/* Breadcrumb custom styles */
-:deep(.p-breadcrumb) {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-:deep(.p-breadcrumb-home-icon) {
-  color: #2563eb;
 }
 </style>
