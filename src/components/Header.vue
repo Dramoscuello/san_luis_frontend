@@ -4,17 +4,82 @@ import { useRouter } from 'vue-router';
 import { authService } from '@/services/auth.js';
 import {useSedesStore} from "@/stores/sedes.js";
 import {useUserStore} from "@/stores/user.js";
+import { userService } from '@/services/userService.js';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
 
 const router = useRouter();
 const isMenuOpen = ref(false);
 const storeSedes = useSedesStore();
 const storeUser = useUserStore();
 
+// Estado del modal de cambio de contraseña
+const showPasswordModal = ref(false);
+const passwordActual = ref('');
+const passwordNuevo = ref('');
+const passwordConfirmar = ref('');
+const loading = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
+
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
 
+const openPasswordModal = () => {
+  isMenuOpen.value = false;
+  showPasswordModal.value = true;
+  // Limpiar campos
+  passwordActual.value = '';
+  passwordNuevo.value = '';
+  passwordConfirmar.value = '';
+  errorMessage.value = '';
+  successMessage.value = '';
+};
 
+const closePasswordModal = () => {
+  showPasswordModal.value = false;
+};
+
+const changePassword = async () => {
+  errorMessage.value = '';
+  successMessage.value = '';
+
+  // Validaciones
+  if (!passwordActual.value || !passwordNuevo.value || !passwordConfirmar.value) {
+    errorMessage.value = 'Todos los campos son obligatorios';
+    return;
+  }
+
+  if (passwordNuevo.value !== passwordConfirmar.value) {
+    errorMessage.value = 'Las contraseñas nuevas no coinciden';
+    return;
+  }
+
+  if (passwordNuevo.value.length < 4) {
+    errorMessage.value = 'La nueva contraseña debe tener al menos 4 caracteres';
+    return;
+  }
+
+  try {
+    loading.value = true;
+    await userService.changePassword(passwordActual.value, passwordNuevo.value);
+    successMessage.value = 'Contraseña actualizada correctamente';
+    // Limpiar campos después de éxito
+    passwordActual.value = '';
+    passwordNuevo.value = '';
+    passwordConfirmar.value = '';
+    // Cerrar modal después de 2 segundos
+    setTimeout(() => {
+      closePasswordModal();
+    }, 2000);
+  } catch (error) {
+    errorMessage.value = error.response?.data?.detail || 'Error al cambiar la contraseña';
+  } finally {
+    loading.value = false;
+  }
+};
 
 const logout = () => {
   authService.clearAuth();
@@ -51,6 +116,15 @@ onMounted(async () => {
             class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
           >
             <button
+              @click="openPasswordModal"
+              class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              <span>Cambiar contraseña</span>
+            </button>
+            <button
               @click="logout"
               class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
             >
@@ -64,6 +138,76 @@ onMounted(async () => {
       </div>
     </div>
   </header>
+
+  <!-- Modal de Cambio de Contraseña -->
+  <Dialog
+    v-model:visible="showPasswordModal"
+    header="Cambiar contraseña"
+    :modal="true"
+    :closable="true"
+    :style="{ width: '400px' }"
+  >
+    <div class="space-y-4">
+      <!-- Mensaje de error -->
+      <div v-if="errorMessage" class="p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Mensaje de éxito -->
+      <div v-if="successMessage" class="p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg text-sm">
+        {{ successMessage }}
+      </div>
+
+      <!-- Contraseña actual -->
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-gray-700">Contraseña actual</label>
+        <InputText
+          v-model="passwordActual"
+          type="password"
+          placeholder="Ingresa tu contraseña actual"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Nueva contraseña -->
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-gray-700">Nueva contraseña</label>
+        <InputText
+          v-model="passwordNuevo"
+          type="password"
+          placeholder="Ingresa tu nueva contraseña"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Confirmar nueva contraseña -->
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-gray-700">Confirmar nueva contraseña</label>
+        <InputText
+          v-model="passwordConfirmar"
+          type="password"
+          placeholder="Confirma tu nueva contraseña"
+          class="w-full"
+        />
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <Button
+          label="Cancelar"
+          severity="secondary"
+          @click="closePasswordModal"
+          :disabled="loading"
+        />
+        <Button
+          label="Guardar"
+          @click="changePassword"
+          :loading="loading"
+        />
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>

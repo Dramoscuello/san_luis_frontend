@@ -1,5 +1,14 @@
 <script setup>
+import { computed } from 'vue';
+import { useUserStore } from '@/stores/user.js';
 
+const userStore = useUserStore();
+
+// Verifica si el usuario es coordinador o rector
+const esDirectivo = computed(() => {
+  const rol = userStore.userLogged.rol?.toLowerCase();
+  return rol === 'coordinador' || rol === 'rector';
+});
 </script>
 
 <template>
@@ -28,8 +37,8 @@
         </ul>
       </div>
 
-      <!-- Gestión Section -->
-      <div class="mb-6">
+      <!-- Gestión Section (Solo para coordinadores y rector) -->
+      <div v-if="esDirectivo" class="mb-6">
         <h2 class="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Gestión</h2>
         <ul class="space-y-1">
           <li>

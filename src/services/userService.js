@@ -46,5 +46,17 @@ export const userService = {
         }catch (e){
             throw e;
         }
+    },
+
+    async changePassword(passwordActual, passwordNuevo){
+        try {
+            const response = await api.post('/user/change-password', {
+                password_actual: passwordActual,
+                password_nuevo: passwordNuevo
+            });
+            return response;
+        }catch (e){
+            throw e;
+        }
     }
 }
