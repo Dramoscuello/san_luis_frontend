@@ -1,15 +1,15 @@
-import {defineStore} from "pinia";
-import {ref, reactive} from "vue";
-import {sedesService} from "@/services/sedesService.js";
+import { defineStore } from "pinia";
+import { ref, reactive } from "vue";
+import { sedesService } from "@/services/sedesService.js";
 
-export const useSedesStore = defineStore('sedes', ()=>{
+export const useSedesStore = defineStore('sedes', () => {
     const sedes = ref([]);
     const sede = reactive({
-        id:null,
-        nombre:'',
-        direccion:'',
-        codigo:'',
-        active: true
+        id: null,
+        nombre: '',
+        direccion: '',
+        codigo: '',
+        activa: true
     });
 
     const selectedSede = reactive({
@@ -17,69 +17,69 @@ export const useSedesStore = defineStore('sedes', ()=>{
         nombre: null
     });
 
-    async function getSedes(){
-        try{
+    async function getSedes() {
+        try {
             sedes.value = await sedesService.getSedes();
 
         }
-        catch(e){
+        catch (e) {
             console.error(e);
         }
     }
 
-    async function updateEstado(obj){
-        try{
+    async function updateEstado(obj) {
+        try {
             await sedesService.updateSede(obj);
-            const i =  sedes.value.findIndex(item=> item.id === obj.id);
+            const i = sedes.value.findIndex(item => item.id === obj.id);
 
-            if (i > -1){
-                sedes.value[i].active = obj.active;
+            if (i > -1) {
+                sedes.value[i].activa = obj.activa;
             }
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
 
-    async function updateSede(){
-        try{
+    async function updateSede() {
+        try {
             await sedesService.updateSede(sede);
-            const i =  sedes.value.findIndex(item=> item.id === sede.id);
+            const i = sedes.value.findIndex(item => item.id === sede.id);
 
-            if (i > -1){
-                sedes.value[i].active = sede.active;
+            if (i > -1) {
+                sedes.value[i].activa = sede.activa;
                 sedes.value[i].nombre = sede.nombre;
                 sedes.value[i].codigo = sede.codigo;
                 sedes.value[i].direccion = sede.direccion;
             }
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
 
-    async function deleteSede(sede_id){
-        try{
+    async function deleteSede(sede_id) {
+        try {
             await sedesService.deleteSede(sede_id);
-            const i =  sedes.value.findIndex(item=> item.id === sede_id);
+            const i = sedes.value.findIndex(item => item.id === sede_id);
 
-            if (i > -1){
+            if (i > -1) {
                 sedes.value.splice(i, 1);
             }
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
 
-    async function crearSede(){
-        try{
-            const {data} = await sedesService.createSede(sede);
+    async function crearSede() {
+        try {
+            const { data } = await sedesService.createSede(sede);
             console.log(data);
             sedes.value.push(data);
-        }catch(e){
+        } catch (e) {
             throw e;
         }
     }
 
-    function clearSelectedSedes(){
+    function clearSelectedSedes() {
         selectedSede.id = null;
         selectedSede.nombre = null;
     }

@@ -22,7 +22,7 @@ const confirm = useConfirm();
 
 const toggleActivo = async (sede) => {
   try{
-    await store.updateEstado({id: sede.id, active: !sede.active});
+    await store.updateEstado({id: sede.id, activa: !sede.activa});
   }catch (error) {
     console.log(error);
     toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
@@ -34,7 +34,7 @@ const editarSede = (sede) => {
   store.sede.codigo = sede.codigo;
   store.sede.direccion = sede.direccion;
   store.sede.id = sede.id;
-  store.sede.active = sede.active;
+  store.sede.activa = sede.activa;
   storeModalSedes.toggleModalSede();
 }
 
@@ -68,7 +68,7 @@ const agregarNuevaSede = () => {
   store.sede.codigo = '';
   store.sede.direccion = '';
   store.sede.id = null;
-  store.sede.active = true;
+  store.sede.activa = true;
   storeModalSedes.toggleModalSede();
 };
 
@@ -101,14 +101,14 @@ const agregarNuevaSede = () => {
           <Column field="nombre" header="Sede"></Column>
           <Column field="codigo" header="Código"></Column>
           <Column field="direccion" header="Dirección"></Column>
-          <Column field="active" header="Activo">
+          <Column field="activa" header="Activo">
             <template #body="slotProps">
               <span
                 @click="toggleActivo(slotProps.data)"
-                :class="slotProps.data.active ? 'bg-green-500' : 'bg-red-500'"
+                :class="slotProps.data.activa ? 'bg-green-500' : 'bg-red-500'"
                 class="px-3 py-1 rounded-full text-white text-sm font-semibold cursor-pointer hover:opacity-80 transition-opacity"
               >
-                {{ slotProps.data.active ? 'Activo' : 'Inactivo' }}
+                {{ slotProps.data.activa ? 'Activo' : 'Inactivo' }}
               </span>
             </template>
           </Column>
