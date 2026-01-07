@@ -80,6 +80,25 @@ onMounted(async () => {
 // ============================================
 // FUNCIONES EXISTENTES
 // ============================================
+/**
+ * Retorna la clase de color para el badge del rol
+ * Verde: Rector, Coordinador
+ * Azul: Docente
+ */
+const getRolBadgeClass = (rol) => {
+  if (!rol) return 'bg-gray-500';
+  
+  const rolNormalized = rol.toLowerCase();
+  
+  if (rolNormalized === 'rector' || rolNormalized === 'coordinador') {
+    return 'bg-green-600';
+  } else if (rolNormalized === 'docente') {
+    return 'bg-blue-600';
+  }
+  
+  return 'bg-gray-500';
+};
+
 const toggleActivo = async (usuario) => {
   try{
     await userStore.updateUserEstado({id: usuario.id, activo: !usuario.activo});
@@ -494,12 +513,24 @@ const upload = async () => {
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
         >
-          <Column field="email" header="Email" :sortable="true"></Column>
           <Column field="nombre_completo" header="Nombre Completo" :sortable="true"></Column>
-          <Column field="cedula" header="Cédula" :sortable="true"></Column>
-          <Column field="rol" header="Rol" :sortable="true"></Column>
-          <Column field="sede_nombre" header="Sede" :sortable="true"></Column>
-          <Column field="telefono" header="Teléfono" :sortable="true"></Column>
+          <Column field="rol" header="Rol" :sortable="true">
+            <template #body="slotProps">
+              <span 
+                :class="getRolBadgeClass(slotProps.data.rol)" 
+                class="px-3 py-1 rounded-full text-white text-xs font-semibold uppercase tracking-wide"
+              >
+                {{ slotProps.data.rol }}
+              </span>
+            </template>
+          </Column>
+          <Column field="sede_nombre" header="Sede" :sortable="true">
+            <template #body="slotProps">
+              <span :class="{'text-gray-400 italic': !slotProps.data.sede_nombre}">
+                {{ slotProps.data.sede_nombre || 'Sin sede...' }}
+              </span>
+            </template>
+          </Column>
           <Column field="activo" header="Estado">
             <template #body="slotProps">
               <span

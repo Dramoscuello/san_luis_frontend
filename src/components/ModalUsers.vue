@@ -2,20 +2,34 @@
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
+import Dropdown from 'primevue/dropdown';
 import {useModalUserStore} from '@/stores/modalUsers.js';
 import {useUserStore} from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import SelectSedes from "@/components/SelectSedes.vue";
-import {computed} from "vue";
+import {computed, ref} from "vue";
 
 const storeModalUser = useModalUserStore();
 const storeUser = useUserStore();
 const toast = useToast();
 const closable = false;
 
+const roles = ref([
+    {name: 'Rector', value: 'rector'},
+    {name: 'Coordinador', value: 'coordinador'},
+    {name: 'Docente', value: 'docente'}
+]);
 
+const requiresSede = computed(() => {
+    return storeUser.user.rol === 'docente';
+});
 
 const HandleSubmit = ()=>{
+  // Si no requiere sede (rector/coordinador), limpiamos el valor
+  if (!requiresSede.value) {
+    storeUser.user.sede_id = null;
+  }
+  
   if(storeUser.user.id){
     actualizarUser();
   }else{
@@ -54,8 +68,6 @@ const crearUser = async () => {
   }
 }
 
-
-
 </script>
 
 <template>
@@ -90,10 +102,19 @@ const crearUser = async () => {
 
       <div class="flex items-center gap-4 mb-4">
         <label for="rol" class="font-semibold w-24">Rol</label>
-        <InputText id="rol" v-model="storeUser.user.rol" name="rol" class="flex-auto" autocomplete="off" required/>
+        <Dropdown 
+            id="rol" 
+            v-model="storeUser.user.rol" 
+            :options="roles" 
+            optionLabel="name" 
+            optionValue="value" 
+            placeholder="Seleccione un rol" 
+            class="flex-auto" 
+            required
+        />
       </div>
 
-      <div class="flex items-center gap-4 mb-4">
+      <div v-if="requiresSede" class="flex items-center gap-4 mb-4">
         <label class="font-semibold w-24">Sede</label>
         <SelectSedes/>
       </div>

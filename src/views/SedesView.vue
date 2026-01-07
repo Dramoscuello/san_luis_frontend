@@ -548,18 +548,22 @@ onMounted(async () => {
             </div>
             
             <!-- Card Body -->
-            <div class="card-body p-4">
-              <div class="flex items-center gap-2 text-gray-600 mb-2">
+            <div class="card-body p-4 space-y-2">
+              <div class="flex items-center gap-2 text-gray-600">
                 <i class="pi pi-map-marker text-blue-500"></i>
                 <span class="text-sm truncate">{{ sede.direccion || 'Sin dirección' }}</span>
               </div>
-              <div class="flex items-center gap-2 text-gray-600 mb-2">
+              <div class="flex items-center gap-2 text-gray-600">
                 <i class="pi pi-hashtag text-blue-500"></i>
                 <span class="text-sm">Código: {{ sede.codigo }}</span>
               </div>
               <div class="flex items-center gap-2 text-gray-600">
                 <i class="pi pi-book text-blue-500"></i>
                 <span class="text-sm">{{ getGradosCount(sede) }} grado(s)</span>
+              </div>
+              <div class="flex items-center gap-2 text-gray-600">
+                <i class="pi pi-briefcase text-blue-500"></i>
+                <span class="text-sm">{{ sede.cantidad_docentes || 0 }} docente(s)</span>
               </div>
               <div class="mt-3">
                 <span 
