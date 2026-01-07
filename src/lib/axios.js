@@ -10,7 +10,8 @@ const api = Axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
     timeout: 10000,
     headers: {
-        'Content-Type': 'application/json',
+        // 'Content-Type': 'application/json', // Se asigna automáticamente
+        'Accept': 'application/json',
     }
 });
 

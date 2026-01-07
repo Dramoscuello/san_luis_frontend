@@ -31,6 +31,12 @@ const router = createRouter({
           meta: {requiresAuth: true}
       },
       {
+          path:'/publicaciones',
+          name: 'publicaciones',
+          component: ()=>import('../views/PublicacionesView.vue'),
+          meta: {requiresAuth: true}
+      },
+      {
           path:'/login',
           redirect: '/'
       }
