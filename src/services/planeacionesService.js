@@ -11,11 +11,16 @@ export const planeacionesService = {
 
     /**
      * Obtiene todas las planeaciones (coordinadores/rector)
+     * @param {number} [docenteId] - ID del docente para filtrar (opcional)
      * @returns {Promise<Array>} Lista de planeaciones con información del docente
      */
-    async getPlaneaciones() {
+    async getPlaneaciones(docenteId = null) {
         try {
-            const { data } = await api.get('/planeaciones/');
+            let url = '/planeaciones/';
+            if (docenteId) {
+                url += `?docente_id=${docenteId}`;
+            }
+            const { data } = await api.get(url);
             return data;
         } catch (error) {
             throw error;

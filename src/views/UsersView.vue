@@ -11,6 +11,7 @@ import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import {ref, onMounted, computed, watch} from 'vue';
+import {useRouter} from 'vue-router';
 import {useUserStore} from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -36,7 +37,13 @@ const storeModalUser = useModalUserStore();
 const storeModalAssign = useModalAssignAsignaturasStore();
 const storeModalAssignGrupos = useModalAssignGruposStore();
 const stateSedes = useSedesStore();
+const router = useRouter();
 const isUploadMenuOpen = ref(false);
+
+// Navegar al detalle del docente
+const verDetalleDocente = (docente) => {
+  router.push({ name: 'detalle_docente', params: { id: docente.id } });
+};
 
 const openAssignModal = (user) => {
     storeModalAssign.openModal(user);
@@ -331,7 +338,16 @@ const upload = async () => {
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} docentes"
         >
-          <Column field="nombre_completo" header="Nombre Completo" :sortable="true"></Column>
+          <Column field="nombre_completo" header="Nombre Completo" :sortable="true">
+            <template #body="slotProps">
+              <span 
+                class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
+                @click="verDetalleDocente(slotProps.data)"
+              >
+                {{ slotProps.data.nombre_completo }}
+              </span>
+            </template>
+          </Column>
           <!-- Rol eliminado -->
           <Column field="sede_nombre" header="Sede" :sortable="true">
             <template #body="slotProps">

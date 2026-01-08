@@ -20,6 +20,7 @@ import { useUserStore } from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
+import { authService } from "@/services/auth.js";
 
 const publicacionesStore = usePublicacionesStore();
 const userStore = useUserStore();
@@ -31,7 +32,15 @@ const confirm = useConfirm();
 const currentUser = computed(() => userStore.userLogged);
 
 // Verificar si es coordinador o rector (puede editar/eliminar)
+// Usa authService como fuente primaria (inmediato) y el store como fallback
 const puedeEditar = computed(() => {
+  // Primero obtener de localStorage (guardado en login)
+  const rolFromAuth = authService.getUserRole();
+  if (rolFromAuth) {
+    return rolFromAuth === 'coordinador' || rolFromAuth === 'rector';
+  }
+  
+  // Fallback al store
   const rol = currentUser.value?.rol?.toLowerCase();
   return rol === 'coordinador' || rol === 'rector';
 });
@@ -178,16 +187,17 @@ const volverAGestion = () => {
           <div>
             <div class="flex items-center gap-3">
               <Button
+                v-if="puedeEditar"
                 icon="pi pi-arrow-left"
                 severity="secondary"
                 text
                 rounded
                 @click="volverAGestion"
-                v-tooltip.top="'Volver'"
+                v-tooltip.top="'Volver a gestión'"
               />
               <h1 class="text-2xl font-bold text-gray-800">Todas las Publicaciones</h1>
             </div>
-            <p class="text-gray-500 text-sm mt-1 ml-12">Visualiza todas las publicaciones institucionales</p>
+            <p class="text-gray-500 text-sm mt-1" :class="puedeEditar ? 'ml-12' : ''">Visualiza todas las publicaciones institucionales</p>
           </div>
           <span class="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
             {{ totalRecords }} publicaciones

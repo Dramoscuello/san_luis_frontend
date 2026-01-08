@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref} from 'vue';
+import {onMounted, ref, computed} from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/auth.js';
 import {useSedesStore} from "@/stores/sedes.js";
@@ -13,6 +13,29 @@ const router = useRouter();
 const isMenuOpen = ref(false);
 const storeSedes = useSedesStore();
 const storeUser = useUserStore();
+
+// Obtener el nombre del usuario desde localStorage (inmediato) o del store (después de API)
+const nombreUsuario = computed(() => {
+  // Primero intentar obtener de localStorage (guardado en login)
+  const userFromAuth = authService.getUser();
+  if (userFromAuth && userFromAuth.nombre_completo) {
+    return userFromAuth.nombre_completo;
+  }
+  // Fallback al store
+  return storeUser.userLogged.nombre_completo || 'Usuario';
+});
+
+// Obtener las iniciales del nombre
+const inicialesUsuario = computed(() => {
+  const nombre = nombreUsuario.value;
+  if (!nombre || nombre === 'Usuario') return 'U';
+  return nombre
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+});
 
 // Estado del modal de cambio de contraseña
 const showPasswordModal = ref(false);
@@ -102,9 +125,9 @@ onMounted(async () => {
             class="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-3 py-2 transition"
           >
             <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-              <span class="text-white text-sm font-medium">E</span>
+              <span class="text-white text-sm font-medium">{{ inicialesUsuario }}</span>
             </div>
-            <span class="text-sm font-medium text-gray-700">{{storeUser.userLogged.nombre_completo}}</span>
+            <span class="text-sm font-medium text-gray-700">{{ nombreUsuario }}</span>
             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
