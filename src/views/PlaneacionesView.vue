@@ -27,6 +27,7 @@ import { useSedesStore } from "@/stores/sedes.js";
 import { usePeriodosStore } from "@/stores/periodos.js";
 import { useUserStore } from "@/stores/user.js";
 import { usePlaneacionesDestacadasStore } from "@/stores/planeacionesDestacadas.js";
+import { useComentariosStore } from "@/stores/comentarios.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
@@ -37,6 +38,7 @@ const sedesStore = useSedesStore();
 const periodosStore = usePeriodosStore();
 const userStore = useUserStore();
 const destacadasStore = usePlaneacionesDestacadasStore();
+const comentariosStore = useComentariosStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
@@ -62,6 +64,19 @@ const modalDestacadaVisible = ref(false);
 const planeacionADestacar = ref(null);
 const razonDestacada = ref('');
 const guardandoDestacada = ref(false);
+
+// ============================================
+// MODAL COMENTARIOS
+// ============================================
+const modalComentariosVisible = ref(false);
+const planeacionComentarios = ref(null);
+const nuevoComentario = ref('');
+
+// Computed para verificar si es directivo (coordinador o rector)
+const isDirectivo = computed(() => {
+  const rol = currentUser.value?.rol?.toLowerCase();
+  return rol === 'coordinador' || rol === 'rector';
+});
 
 // ============================================
 // PARA DOCENTES: Últimas 5 planeaciones
@@ -391,6 +406,95 @@ const guardarDestacada = async () => {
     guardandoDestacada.value = false;
   }
 };
+
+// ============================================
+// FUNCIONES PARA COMENTARIOS
+// ============================================
+
+/**
+ * Abre el modal de comentarios y carga los comentarios de la planeación
+ */
+const abrirModalComentarios = async (planeacion) => {
+  planeacionComentarios.value = planeacion;
+  modalComentariosVisible.value = true;
+  nuevoComentario.value = '';
+  await comentariosStore.getComentarios(planeacion.id);
+};
+
+/**
+ * Cierra el modal de comentarios
+ */
+const cerrarModalComentarios = () => {
+  modalComentariosVisible.value = false;
+  planeacionComentarios.value = null;
+  nuevoComentario.value = '';
+  comentariosStore.limpiarComentarios();
+};
+
+/**
+ * Envía un nuevo comentario
+ */
+const enviarComentario = async () => {
+  if (!nuevoComentario.value.trim()) {
+    toast.add({ severity: 'warn', summary: 'Campo requerido', detail: 'El comentario no puede estar vacío', life: 3000 });
+    return;
+  }
+
+  try {
+    await comentariosStore.crearComentario(planeacionComentarios.value.id, nuevoComentario.value.trim());
+    nuevoComentario.value = '';
+    toast.add({ severity: 'success', summary: 'Enviado', detail: 'Comentario agregado correctamente', life: 3000 });
+  } catch (error) {
+    console.error('Error al enviar comentario:', error);
+    const errorMsg = error.response?.data?.detail || 'No se pudo enviar el comentario';
+    toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 5000 });
+  }
+};
+
+/**
+ * Elimina un comentario
+ */
+const eliminarComentarioHandler = async (comentario) => {
+  try {
+    await comentariosStore.eliminarComentario(comentario.id);
+    toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Comentario eliminado', life: 3000 });
+  } catch (error) {
+    console.error('Error al eliminar comentario:', error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el comentario', life: 5000 });
+  }
+};
+
+/**
+ * Confirma la eliminación de un comentario
+ */
+const confirmarEliminarComentario = (comentario) => {
+  confirmAlert(
+    confirm,
+    '¿Estás seguro que deseas eliminar este comentario?',
+    () => eliminarComentarioHandler(comentario),
+    {
+      header: 'Eliminar Comentario',
+      acceptProps: {
+        label: 'Eliminar',
+        severity: 'danger'
+      }
+    }
+  );
+};
+
+/**
+ * Formatea la fecha del comentario
+ */
+const formatComentarioDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 </script>
 
 <template>
@@ -688,6 +792,16 @@ const guardarDestacada = async () => {
                       @click="verArchivo(plan)"
                       v-tooltip.top="'Ver archivo'"
                     />
+                    <!-- Boton comentarios -->
+                    <Button
+                      icon="pi pi-comments"
+                      severity="secondary"
+                      text
+                      rounded
+                      size="small"
+                      @click="abrirModalComentarios(plan)"
+                      v-tooltip.top="'Ver comentarios'"
+                    />
                     <!-- Boton destacar (solo coordinadores/rector) -->
                     <Button
                       v-if="!isDocente"
@@ -797,6 +911,103 @@ const guardarDestacada = async () => {
           :loading="guardandoDestacada"
         />
       </template>
+    </Dialog>
+
+    <!-- Modal de Comentarios -->
+    <Dialog
+      v-model:visible="modalComentariosVisible"
+      modal
+      :header="`Comentarios: ${planeacionComentarios?.titulo || ''}`"
+      :style="{ width: '40vw' }"
+      :breakpoints="{ '960px': '70vw', '640px': '90vw' }"
+      @hide="cerrarModalComentarios"
+    >
+      <!-- Área de comentarios -->
+      <div class="flex flex-col h-[400px]">
+        <!-- Lista de comentarios con scroll -->
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <!-- Loading state -->
+          <div v-if="comentariosStore.loading" class="flex items-center justify-center h-full">
+            <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
+          </div>
+
+          <!-- Sin comentarios -->
+          <div v-else-if="comentariosStore.comentarios.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
+            <i class="pi pi-comments text-4xl mb-2"></i>
+            <p>No se tienen comentarios</p>
+          </div>
+
+          <!-- Lista de comentarios -->
+          <div v-else class="space-y-3">
+            <div
+              v-for="comentario in comentariosStore.comentarios"
+              :key="comentario.id"
+              class="bg-gray-50 rounded-lg p-3 border border-gray-100 group"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-start gap-3">
+                  <!-- Avatar -->
+                  <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                    {{ getInitials(comentario.coordinador?.nombre_completo || comentario.autor_nombre) }}
+                  </div>
+                  <!-- Contenido -->
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-gray-800 text-sm">
+                        {{ comentario.coordinador?.nombre_completo || comentario.autor_nombre || 'Coordinador' }}
+                      </span>
+                      <span class="text-xs text-gray-400">
+                        {{ formatComentarioDate(comentario.created_at) }}
+                      </span>
+                    </div>
+                    <p class="text-gray-700 text-sm mt-1">{{ comentario.contenido }}</p>
+                  </div>
+                </div>
+                <!-- Botón eliminar (solo directivos) -->
+                <Button
+                  v-if="isDirectivo"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  text
+                  rounded
+                  size="small"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  @click="confirmarEliminarComentario(comentario)"
+                  v-tooltip.top="'Eliminar comentario'"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input para nuevo comentario (solo directivos) -->
+        <div v-if="isDirectivo" class="pt-4 border-t border-gray-200 mt-4">
+          <div class="flex gap-2">
+            <InputText
+              v-model="nuevoComentario"
+              placeholder="Escribe un comentario..."
+              class="flex-1"
+              @keyup.enter="enviarComentario"
+              :disabled="comentariosStore.enviando"
+            />
+            <Button
+              icon="pi pi-send"
+              severity="primary"
+              @click="enviarComentario"
+              :loading="comentariosStore.enviando"
+              v-tooltip.top="'Enviar comentario'"
+            />
+          </div>
+        </div>
+
+        <!-- Mensaje para docentes -->
+        <div v-else class="pt-4 border-t border-gray-200 mt-4">
+          <p class="text-sm text-gray-400 text-center">
+            <i class="pi pi-info-circle mr-1"></i>
+            Solo los coordinadores pueden agregar comentarios
+          </p>
+        </div>
+      </div>
     </Dialog>
   </div>
 </template>

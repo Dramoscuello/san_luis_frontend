@@ -13,6 +13,8 @@ import Sidebar from "@/components/Sidebar.vue";
 import Header from "@/components/Header.vue";
 import Button from 'primevue/button';
 import Paginator from 'primevue/paginator';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
 import { onMounted, computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePlaneacionesStore } from "@/stores/planeaciones.js";
@@ -20,12 +22,18 @@ import { useUserStore } from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
+import { useComentariosStore } from "@/stores/comentarios.js";
 
 const planeacionesStore = usePlaneacionesStore();
 const userStore = useUserStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
+const comentariosStore = useComentariosStore();
+
+// Modal de comentarios
+const modalComentariosVisible = ref(false);
+const planeacionComentarios = ref(null);
 
 // Paginación
 const first = ref(0);
@@ -123,6 +131,55 @@ const confirmarEliminar = (planeacion) => {
  */
 const volverAGestion = () => {
   router.push({ name: 'planeaciones' });
+};
+
+// ============================================
+// FUNCIONES PARA COMENTARIOS
+// ============================================
+
+/**
+ * Abre el modal de comentarios y carga los comentarios de la planeación
+ */
+const abrirModalComentarios = async (planeacion) => {
+  planeacionComentarios.value = planeacion;
+  modalComentariosVisible.value = true;
+  await comentariosStore.getComentarios(planeacion.id);
+};
+
+/**
+ * Cierra el modal de comentarios
+ */
+const cerrarModalComentarios = () => {
+  modalComentariosVisible.value = false;
+  planeacionComentarios.value = null;
+  comentariosStore.limpiarComentarios();
+};
+
+/**
+ * Obtiene las iniciales del nombre
+ */
+const getInitials = (nombre) => {
+  if (!nombre) return '??';
+  return nombre
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+};
+
+/**
+ * Formatea la fecha del comentario
+ */
+const formatComentarioDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 </script>
 
@@ -222,6 +279,16 @@ const volverAGestion = () => {
                   @click="verArchivo(plan)"
                   v-tooltip.top="'Ver archivo'"
                 />
+                <!-- Boton comentarios -->
+                <Button
+                  icon="pi pi-comments"
+                  severity="secondary"
+                  text
+                  rounded
+                  size="small"
+                  @click="abrirModalComentarios(plan)"
+                  v-tooltip.top="'Ver comentarios'"
+                />
                 <Button
                   icon="pi pi-pencil"
                   severity="warning"
@@ -260,5 +327,68 @@ const volverAGestion = () => {
         </div>
       </div>
     </main>
+
+    <!-- Modal de Comentarios (solo lectura para docentes) -->
+    <Dialog
+      v-model:visible="modalComentariosVisible"
+      modal
+      :header="`Comentarios: ${planeacionComentarios?.titulo || ''}`"
+      :style="{ width: '40vw' }"
+      :breakpoints="{ '960px': '70vw', '640px': '90vw' }"
+      @hide="cerrarModalComentarios"
+    >
+      <!-- Área de comentarios -->
+      <div class="flex flex-col h-[400px]">
+        <!-- Lista de comentarios con scroll -->
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <!-- Loading state -->
+          <div v-if="comentariosStore.loading" class="flex items-center justify-center h-full">
+            <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
+          </div>
+
+          <!-- Sin comentarios -->
+          <div v-else-if="comentariosStore.comentarios.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
+            <i class="pi pi-comments text-4xl mb-2"></i>
+            <p>No se tienen comentarios</p>
+          </div>
+
+          <!-- Lista de comentarios -->
+          <div v-else class="space-y-3">
+            <div
+              v-for="comentario in comentariosStore.comentarios"
+              :key="comentario.id"
+              class="bg-gray-50 rounded-lg p-3 border border-gray-100"
+            >
+              <div class="flex items-start gap-3">
+                <!-- Avatar -->
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                  {{ getInitials(comentario.coordinador?.nombre_completo || comentario.autor_nombre) }}
+                </div>
+                <!-- Contenido -->
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-semibold text-gray-800 text-sm">
+                      {{ comentario.coordinador?.nombre_completo || comentario.autor_nombre || 'Coordinador' }}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                      {{ formatComentarioDate(comentario.created_at) }}
+                    </span>
+                  </div>
+                  <p class="text-gray-700 text-sm mt-1">{{ comentario.contenido }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensaje informativo para docentes -->
+        <div class="pt-4 border-t border-gray-200 mt-4">
+          <p class="text-sm text-gray-400 text-center">
+            <i class="pi pi-info-circle mr-1"></i>
+            Solo los coordinadores pueden agregar comentarios
+          </p>
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
