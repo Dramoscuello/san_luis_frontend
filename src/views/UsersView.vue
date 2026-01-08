@@ -65,7 +65,10 @@ const filteredUsers = computed(() => {
 });
 
 onMounted(async () => {
-  await userStore.getDocentes();
+  await Promise.all([
+    userStore.getDocentes(),
+    stateSedes.getSedes()
+  ]);
 });
 
 // Refrescar lista al cerrar modal
@@ -207,9 +210,12 @@ const processUsers = async (usersData) => {
       }
       
       const { data } = await userService.createUser({...userData});
-      
+
       // Agregar al store si es docente
       if ((data.rol || '').toLowerCase() === 'docente') {
+           // Buscar el nombre de la sede en el store
+           const sedeEncontrada = stateSedes.sedes.find(s => s.id === data.sede_id);
+           data.sede_nombre = sedeEncontrada ? sedeEncontrada.nombre : null;
            userStore.docentes.push(data);
       }
       

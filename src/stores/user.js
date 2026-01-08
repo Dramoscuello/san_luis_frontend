@@ -11,7 +11,8 @@ export const useUserStore = defineStore("user", () => {
         cedula: '',
         rol: '',
         activo: true,
-        telefono: ''
+        telefono: '',
+        asignaturas: []
     });
 
     const user = reactive({
@@ -39,6 +40,7 @@ export const useUserStore = defineStore("user", () => {
             userLogged.rol = response.rol;
             userLogged.activo = Boolean(response.activo);
             userLogged.telefono = response.telefono;
+            userLogged.asignaturas = response.asignaturas || [];
         } catch (err) {
             console.log(err);
         }

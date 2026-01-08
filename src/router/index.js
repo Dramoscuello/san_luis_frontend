@@ -79,6 +79,12 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/planeaciones',
+            name: 'planeaciones',
+            component: () => import('../views/PlaneacionesView.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
             path: '/login',
             redirect: '/'
         }

@@ -50,12 +50,13 @@ const handleToggleEstado = async (periodo) => {
     return;
   }
 
+  const nuevoEstado = !periodo.activo;
   try {
-    await periodosStore.toggleEstado(periodo.id, !periodo.activo);
+    await periodosStore.toggleEstado(periodo.id, nuevoEstado);
     toast.add({
       severity: 'info',
       summary: 'OK',
-      detail: `Periodo ${!periodo.activo ? 'activado' : 'desactivado'}`,
+      detail: `Periodo ${nuevoEstado ? 'activado' : 'desactivado'}`,
       life: 3000
     });
   } catch (error) {
