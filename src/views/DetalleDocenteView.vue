@@ -23,7 +23,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from "@/stores/user.js";
 import { usePlaneacionesDestacadasStore } from "@/stores/planeacionesDestacadas.js";
 import { useComentariosStore } from "@/stores/comentarios.js";
+import { useComentariosProyectosStore } from "@/stores/comentariosProyectos.js";
 import { planeacionesService } from "@/services/planeacionesService.js";
+import proyectosService from "@/services/proyectosService.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
@@ -35,12 +37,13 @@ const router = useRouter();
 const userStore = useUserStore();
 const destacadasStore = usePlaneacionesDestacadasStore();
 const comentariosStore = useComentariosStore();
+const comentariosProyectosStore = useComentariosProyectosStore();
 const toast = useToast();
 const confirm = useConfirm();
 const periodosStore = usePeriodosStore();
 
 // Estado de navegación interna
-const currentView = ref('modulos'); // 'modulos' | 'planeaciones'
+const currentView = ref('modulos'); // 'modulos' | 'planeaciones' | 'proyectos'
 
 // Datos del docente
 const docente = ref(null);
@@ -49,6 +52,13 @@ const loading = ref(true);
 // Planeaciones del docente
 const planeaciones = ref([]);
 const loadingPlaneaciones = ref(false);
+
+// Proyectos del docente
+const proyectos = ref([]);
+const loadingProyectos = ref(false);
+const proyectoSeleccionado = ref(null);
+const evidenciasProyecto = ref([]);
+const loadingEvidencias = ref(false);
 
 // Paginación
 const first = ref(0);
@@ -69,10 +79,16 @@ watch([filtroAsignatura, filtroPeriodo], () => {
   first.value = 0;
 });
 
-// Modal de comentarios
+// Modal de comentarios (planeaciones)
 const modalComentariosVisible = ref(false);
 const planeacionComentarios = ref(null);
 const nuevoComentario = ref('');
+
+// Modal de comentarios de proyectos
+const modalComentariosProyectoVisible = ref(false);
+const nuevoComentarioProyecto = ref('');
+const comentarioProyectoEditandoId = ref(null);
+const contenidoProyectoEditado = ref('');
 
 // Modal de destacar
 const modalDestacadaVisible = ref(false);
@@ -101,7 +117,7 @@ const modulos = [
     titulo: 'Proyectos',
     icono: 'pi-briefcase',
     color: 'bg-gradient-to-r from-blue-400 to-green-400',
-    activo: false
+    activo: true
   },
   {
     id: 'cronograma',
@@ -206,6 +222,9 @@ const navegarAModulo = async (modulo) => {
   if (modulo.id === 'planeaciones') {
     currentView.value = 'planeaciones';
     await cargarPlaneaciones();
+  } else if (modulo.id === 'proyectos') {
+    currentView.value = 'proyectos';
+    await cargarProyectos();
   }
 };
 
@@ -223,14 +242,56 @@ const cargarPlaneaciones = async () => {
   }
 };
 
+// Cargar proyectos del docente
+const cargarProyectos = async () => {
+  loadingProyectos.value = true;
+  try {
+    const response = await proyectosService.getProyectos(docente.value.id);
+    proyectos.value = response.data;
+  } catch (error) {
+    console.error('Error al cargar proyectos:', error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los proyectos', life: 3000 });
+  } finally {
+    loadingProyectos.value = false;
+  }
+};
+
 // Volver a los módulos
 const volverAModulos = () => {
   currentView.value = 'modulos';
   planeaciones.value = [];
+  proyectos.value = [];
+  proyectoSeleccionado.value = null;
   first.value = 0;
   // Limpiar filtros
   filtroAsignatura.value = null;
   filtroPeriodo.value = null;
+};
+
+// Ver detalle de un proyecto
+const verDetalleProyecto = async (proyecto) => {
+  proyectoSeleccionado.value = proyecto;
+  await cargarEvidencias(proyecto.id);
+};
+
+// Cargar evidencias del proyecto
+const cargarEvidencias = async (proyectoId) => {
+  loadingEvidencias.value = true;
+  try {
+    const response = await proyectosService.getEvidencias(proyectoId);
+    evidenciasProyecto.value = response.data;
+  } catch (error) {
+    console.error('Error al cargar evidencias:', error);
+    evidenciasProyecto.value = [];
+  } finally {
+    loadingEvidencias.value = false;
+  }
+};
+
+// Volver a la lista de proyectos
+const volverAProyectos = () => {
+  proyectoSeleccionado.value = null;
+  evidenciasProyecto.value = [];
 };
 
 // Limpiar filtros
@@ -273,6 +334,17 @@ const verArchivo = (planeacion) => {
   if (planeacion.drive_view_link) {
     window.open(planeacion.drive_view_link, '_blank');
   }
+};
+
+const abrirEnlace = (url) => {
+  if (url) window.open(url, '_blank');
+};
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
 };
 
 // ============================================
@@ -381,6 +453,95 @@ const formatComentarioDate = (dateString) => {
     minute: '2-digit'
   });
 };
+
+// ============================================
+// FUNCIONES PARA COMENTARIOS DE PROYECTOS
+// ============================================
+
+const abrirComentariosProyecto = async () => {
+  modalComentariosProyectoVisible.value = true;
+  nuevoComentarioProyecto.value = '';
+  comentarioProyectoEditandoId.value = null;
+  contenidoProyectoEditado.value = '';
+  await comentariosProyectosStore.getComentarios(proyectoSeleccionado.value.id);
+};
+
+const cerrarComentariosProyecto = () => {
+  modalComentariosProyectoVisible.value = false;
+  nuevoComentarioProyecto.value = '';
+  comentarioProyectoEditandoId.value = null;
+  contenidoProyectoEditado.value = '';
+  comentariosProyectosStore.limpiarComentarios();
+};
+
+const enviarComentarioProyecto = async () => {
+  if (!nuevoComentarioProyecto.value.trim()) {
+    toast.add({ severity: 'warn', summary: 'Campo requerido', detail: 'El comentario no puede estar vacío', life: 3000 });
+    return;
+  }
+
+  try {
+    await comentariosProyectosStore.crearComentario(proyectoSeleccionado.value.id, nuevoComentarioProyecto.value.trim());
+    nuevoComentarioProyecto.value = '';
+    toast.add({ severity: 'success', summary: 'Enviado', detail: 'Comentario agregado correctamente', life: 3000 });
+  } catch (error) {
+    console.error('Error al enviar comentario:', error);
+    const errorMsg = error.response?.data?.detail || 'No se pudo enviar el comentario';
+    toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 5000 });
+  }
+};
+
+const iniciarEdicionComentarioProyecto = (comentario) => {
+  comentarioProyectoEditandoId.value = comentario.id;
+  contenidoProyectoEditado.value = comentario.contenido;
+};
+
+const cancelarEdicionComentarioProyecto = () => {
+  comentarioProyectoEditandoId.value = null;
+  contenidoProyectoEditado.value = '';
+};
+
+const guardarEdicionComentarioProyecto = async (comentarioId) => {
+  if (!contenidoProyectoEditado.value.trim()) {
+    toast.add({ severity: 'warn', summary: 'Campo requerido', detail: 'El comentario no puede estar vacío', life: 3000 });
+    return;
+  }
+
+  try {
+    await comentariosProyectosStore.actualizarComentario(comentarioId, contenidoProyectoEditado.value.trim());
+    comentarioProyectoEditandoId.value = null;
+    contenidoProyectoEditado.value = '';
+    toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Comentario actualizado', life: 3000 });
+  } catch (error) {
+    console.error('Error al actualizar comentario:', error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el comentario', life: 5000 });
+  }
+};
+
+const eliminarComentarioProyectoHandler = async (comentario) => {
+  try {
+    await comentariosProyectosStore.eliminarComentario(comentario.id);
+    toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Comentario eliminado', life: 3000 });
+  } catch (error) {
+    console.error('Error al eliminar comentario:', error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el comentario', life: 5000 });
+  }
+};
+
+const confirmarEliminarComentarioProyecto = (comentario) => {
+  confirmAlert(
+    confirm,
+    '¿Estás seguro que deseas eliminar este comentario?',
+    () => eliminarComentarioProyectoHandler(comentario),
+    {
+      header: 'Eliminar Comentario',
+      acceptProps: {
+        label: 'Eliminar',
+        severity: 'danger'
+      }
+    }
+  );
+};
 </script>
 
 <template>
@@ -436,6 +597,23 @@ const formatComentarioDate = (dateString) => {
                 <span class="mx-2 text-gray-400">/</span>
                 <span class="text-gray-800 font-medium">Planeaciones</span>
               </template>
+              <template v-if="currentView === 'proyectos'">
+                <span class="mx-2 text-gray-400">/</span>
+                <a 
+                  v-if="proyectoSeleccionado"
+                  class="text-blue-600 hover:text-blue-800 cursor-pointer font-medium transition-colors"
+                  @click="volverAProyectos"
+                >
+                  Proyectos
+                </a>
+                <span v-else class="text-gray-800 font-medium">Proyectos</span>
+                
+                <!-- Nombre del proyecto seleccionado -->
+                <template v-if="proyectoSeleccionado">
+                  <span class="mx-2 text-gray-400">/</span>
+                  <span class="text-gray-800 font-medium">{{ proyectoSeleccionado.titulo }}</span>
+                </template>
+              </template>
             </nav>
           </div>
 
@@ -470,7 +648,7 @@ const formatComentarioDate = (dateString) => {
                   :severity="modulo.activo ? 'success' : 'secondary'"
                   :disabled="!modulo.activo"
                   @click="navegarAModulo(modulo)"
-                  v-tooltip.top="modulo.activo ? 'Entrar' : 'Próximamente'"
+                 
                 />
               </div>
             </div>
@@ -600,7 +778,7 @@ const formatComentarioDate = (dateString) => {
                         rounded
                         size="small"
                         @click="verArchivo(plan)"
-                        v-tooltip.top="'Ver archivo'"
+                       
                       />
                       <Button
                         icon="pi pi-comments"
@@ -609,7 +787,7 @@ const formatComentarioDate = (dateString) => {
                         rounded
                         size="small"
                         @click="abrirModalComentarios(plan)"
-                        v-tooltip.top="'Ver comentarios'"
+                       
                       />
                       <Button
                         :icon="destacadasStore.esDestacada(plan.id) ? 'pi pi-star-fill' : 'pi pi-star'"
@@ -618,7 +796,7 @@ const formatComentarioDate = (dateString) => {
                         rounded
                         size="small"
                         @click="!destacadasStore.esDestacada(plan.id) && abrirModalDestacar(plan)"
-                        v-tooltip.top="destacadasStore.esDestacada(plan.id) ? 'Planeación destacada' : 'Marcar como destacada'"
+                       
                         :class="{ 'cursor-default': destacadasStore.esDestacada(plan.id) }"
                       />
                     </div>
@@ -639,6 +817,218 @@ const formatComentarioDate = (dateString) => {
                   }"
                 />
               </div>
+            </template>
+          </div>
+
+          <!-- ============ PROYECTOS VIEW ============ -->
+          <div v-if="currentView === 'proyectos'">
+            <!-- Loading proyectos -->
+            <div v-if="loadingProyectos" class="flex items-center justify-center h-64">
+              <i class="pi pi-spin pi-spinner text-3xl text-blue-500"></i>
+            </div>
+
+            <template v-else>
+              <!-- ======= VISTA DE DETALLE DEL PROYECTO (Hoja) ======= -->
+              <div v-if="proyectoSeleccionado" class="flex justify-center">
+                <div class="w-full max-w-4xl bg-white shadow-xl rounded-xl border border-gray-200 min-h-[600px] flex flex-col">
+                  
+                  <!-- CABECERA DE LA HOJA -->
+                  <div class="p-8 border-b border-gray-100">
+                    <!-- Título y Estado -->
+                    <div class="flex justify-between items-start mb-6">
+                      <h2 class="text-2xl font-bold text-gray-800 font-serif">{{ proyectoSeleccionado.titulo }}</h2>
+                      <span class="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs uppercase tracking-wide font-semibold">
+                        {{ proyectoSeleccionado.estado || 'Activo' }}
+                      </span>
+                    </div>
+
+                    <!-- Info Grid: Docente y Fechas -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 text-sm text-gray-600">
+                      <div>
+                        <p class="uppercase text-xs font-bold text-gray-400 mb-1">Docente Responsable</p>
+                        <div class="flex items-center gap-2">
+                          <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                            {{ getInitials(docente?.nombre_completo) }}
+                          </div>
+                          <span class="font-medium">{{ docente?.nombre_completo }}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p class="uppercase text-xs font-bold text-gray-400 mb-1">Período de Ejecución</p>
+                        <div class="flex items-center gap-2 font-medium">
+                          <span>{{ formatDate(proyectoSeleccionado.fecha_inicio) }}</span>
+                          <i class="pi pi-arrow-right text-xs text-gray-400"></i>
+                          <span>{{ proyectoSeleccionado.fecha_fin_estimada ? formatDate(proyectoSeleccionado.fecha_fin_estimada) : 'En curso' }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="mb-4">
+                      <h3 class="text-xs uppercase font-bold text-gray-400 mb-2">Descripción</h3>
+                      <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ proyectoSeleccionado.descripcion }}</p>
+                    </div>
+
+                    <!-- Objetivos -->
+                    <div v-if="proyectoSeleccionado.objetivos" class="mb-4">
+                      <h3 class="text-xs uppercase font-bold text-gray-400 mb-2">Objetivos</h3>
+                      <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ proyectoSeleccionado.objetivos }}</p>
+                    </div>
+
+                    <!-- Archivo Adjunto -->
+                    <div v-if="proyectoSeleccionado.nombre_archivo_original" class="mt-4">
+                      <h3 class="text-xs uppercase font-bold text-gray-400 mb-2">Documento Adjunto</h3>
+                      <button 
+                        @click="abrirEnlace(proyectoSeleccionado.drive_view_link)"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
+                      >
+                        <i class="pi pi-file-pdf"></i>
+                        <span class="text-sm font-medium">{{ proyectoSeleccionado.nombre_archivo_original }}</span>
+                        <i class="pi pi-external-link text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- CUERPO: EVIDENCIAS -->
+                  <div class="flex-1 p-8 bg-gray-50/50">
+                    <div class="flex items-center justify-between mb-4">
+                      <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="pi pi-folder-open text-yellow-500"></i>
+                        Evidencias del Proyecto
+                        <span v-if="evidenciasProyecto.length > 0" class="text-sm font-normal text-gray-400">({{ evidenciasProyecto.length }})</span>
+                      </h3>
+                    </div>
+
+                    <!-- Loading Evidencias -->
+                    <div v-if="loadingEvidencias" class="flex justify-center py-10">
+                      <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
+                    </div>
+
+                    <!-- Empty State Evidencias -->
+                    <div v-else-if="evidenciasProyecto.length === 0" class="border-2 border-dashed border-gray-200 rounded-lg p-10 flex flex-col items-center justify-center text-gray-400 bg-white">
+                      <i class="pi pi-images text-4xl mb-3 opacity-50"></i>
+                      <p class="font-medium">Sin evidencias registradas</p>
+                      <p class="text-xs mt-1">Este proyecto aún no tiene evidencias subidas.</p>
+                    </div>
+
+                    <!-- Lista de Evidencias -->
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div 
+                        v-for="evidencia in evidenciasProyecto" 
+                        :key="evidencia.id"
+                        class="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      >
+                        <div class="flex items-start gap-3">
+                          <!-- Icono según tipo -->
+                          <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <i :class="[
+                              'text-blue-600 text-lg',
+                              evidencia.tipo_archivo === 'pdf' ? 'pi pi-file-pdf' :
+                              evidencia.tipo_archivo === 'docx' || evidencia.tipo_archivo === 'doc' ? 'pi pi-file-word' :
+                              ['jpg', 'jpeg', 'png'].includes(evidencia.tipo_archivo) ? 'pi pi-image' :
+                              evidencia.tipo_archivo === 'mp4' ? 'pi pi-video' :
+                              ['xls', 'xlsx'].includes(evidencia.tipo_archivo) ? 'pi pi-file-excel' :
+                              'pi pi-file'
+                            ]"></i>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-800 text-sm truncate">{{ evidencia.titulo }}</h4>
+                            <p class="text-xs text-gray-400 mt-1">
+                              {{ formatDate(evidencia.fecha_evidencia) }} • {{ formatFileSize(evidencia.tamano_bytes) }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1 truncate">{{ evidencia.nombre_archivo_original }}</p>
+                          </div>
+                          <!-- Botón ver -->
+                          <Button 
+                            icon="pi pi-external-link"
+                            text
+                            rounded
+                            size="small"
+                            severity="info"
+                            @click="abrirEnlace(evidencia.drive_view_link)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- FOOTER: Solo botón de comentarios para directivos -->
+                  <div class="p-6 border-t border-gray-100 bg-white rounded-b-xl">
+                    <div class="flex justify-center">
+                      <Button 
+                        icon="pi pi-comments" 
+                        label="Comentar"
+                        severity="info" 
+                        @click="abrirComentariosProyecto"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ======= VISTA DE LISTA DE PROYECTOS (Cards) ======= -->
+              <template v-else>
+                <!-- Empty state: Sin proyectos del docente -->
+                <div
+                  v-if="proyectos.length === 0"
+                  class="text-center py-12 bg-white rounded-lg border border-gray-200"
+                >
+                  <i class="pi pi-briefcase text-4xl text-gray-300 mb-3"></i>
+                  <h4 class="font-semibold text-gray-600 mb-1">Sin proyectos</h4>
+                  <p class="text-gray-400 text-sm">Este docente no tiene proyectos registrados.</p>
+                </div>
+
+                <!-- Grid de proyectos como Cards -->
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div
+                    v-for="proyecto in proyectos"
+                    :key="proyecto.id"
+                    class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <!-- Card Header -->
+                    <div class="px-4 py-4 bg-gradient-to-r from-blue-400 to-green-400">
+                      <h3 class="text-white text-lg font-semibold text-center truncate">
+                        {{ proyecto.titulo }}
+                      </h3>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="p-4">
+                      <div class="flex items-start gap-2 text-gray-600 mb-3">
+                        <i class="pi pi-info-circle text-blue-500 mt-0.5"></i>
+                        <span class="text-sm line-clamp-3">{{ proyecto.descripcion }}</span>
+                      </div>
+                      
+                      <!-- Fechas -->
+                      <div class="flex items-center gap-2 text-xs text-gray-400">
+                        <i class="pi pi-calendar"></i>
+                        <span>{{ formatDate(proyecto.fecha_inicio) }}</span>
+                        <span v-if="proyecto.fecha_fin_estimada">
+                          → {{ formatDate(proyecto.fecha_fin_estimada) }}
+                        </span>
+                      </div>
+                      
+                      <!-- Estado badge -->
+                      <div class="mt-3">
+                        <span class="px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs uppercase font-semibold">
+                          {{ proyecto.estado || 'Activo' }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <!-- Card Footer -->
+                    <div class="border-t border-gray-100 px-4 py-3 flex justify-end items-center bg-gray-50">
+                      <Button
+                        icon="pi pi-arrow-right"
+                        class="p-button-rounded p-button-sm p-button-text"
+                        severity="success"
+                        @click="verDetalleProyecto(proyecto)"
+                       
+                      />
+                    </div>
+                  </div>
+                </div>
+              </template>
             </template>
           </div>
         </template>
@@ -749,7 +1139,7 @@ const formatComentarioDate = (dateString) => {
                   size="small"
                   class="flex-shrink-0"
                   @click="confirmarEliminarComentario(comentario)"
-                  v-tooltip.top="'Eliminar comentario'"
+                 
                 />
               </div>
             </div>
@@ -771,7 +1161,139 @@ const formatComentarioDate = (dateString) => {
               severity="primary"
               @click="enviarComentario"
               :loading="comentariosStore.enviando"
-              v-tooltip.top="'Enviar comentario'"
+             
+            />
+          </div>
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- Modal de Comentarios de Proyectos -->
+    <Dialog
+      v-model:visible="modalComentariosProyectoVisible"
+      modal
+      :header="`Comentarios: ${proyectoSeleccionado?.titulo || ''}`"
+      :style="{ width: '50vw' }"
+      :breakpoints="{ '960px': '75vw', '640px': '95vw' }"
+      @hide="cerrarComentariosProyecto"
+    >
+      <div class="flex flex-col h-[500px]">
+        <!-- Lista de comentarios con scroll -->
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <!-- Loading state -->
+          <div v-if="comentariosProyectosStore.loading" class="flex items-center justify-center h-full">
+            <i class="pi pi-spin pi-spinner text-2xl text-blue-500"></i>
+          </div>
+
+          <!-- Sin comentarios -->
+          <div v-else-if="comentariosProyectosStore.comentarios.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
+            <i class="pi pi-comments text-4xl mb-2"></i>
+            <p>No hay comentarios aún</p>
+            <p class="text-xs mt-1">Agrega el primer comentario a este proyecto</p>
+          </div>
+
+          <!-- Lista de comentarios -->
+          <div v-else class="space-y-3">
+            <div
+              v-for="comentario in comentariosProyectosStore.comentarios"
+              :key="comentario.id"
+              class="bg-gray-50 rounded-lg p-4 border border-gray-100 group"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-start gap-3 flex-1">
+                  <!-- Avatar -->
+                  <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                    {{ getInitials(comentario.coordinador?.nombre_completo) }}
+                  </div>
+                  <!-- Contenido -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="font-semibold text-gray-800 text-sm">
+                        {{ comentario.coordinador?.nombre_completo || 'Coordinador' }}
+                      </span>
+                      <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full uppercase font-semibold">
+                        {{ comentario.coordinador?.rol || 'Directivo' }}
+                      </span>
+                      <span class="text-xs text-gray-400">
+                        {{ formatComentarioDate(comentario.created_at) }}
+                      </span>
+                    </div>
+                    
+                    <!-- Modo edición -->
+                    <div v-if="comentarioProyectoEditandoId === comentario.id" class="mt-2">
+                      <Textarea
+                        v-model="contenidoProyectoEditado"
+                        rows="2"
+                        class="w-full text-sm"
+                        autoResize
+                      />
+                      <div class="flex gap-2 mt-2">
+                        <Button
+                          label="Guardar"
+                          icon="pi pi-check"
+                          size="small"
+                          @click="guardarEdicionComentarioProyecto(comentario.id)"
+                        />
+                        <Button
+                          label="Cancelar"
+                          severity="secondary"
+                          text
+                          size="small"
+                          @click="cancelarEdicionComentarioProyecto"
+                        />
+                      </div>
+                    </div>
+                    
+                    <!-- Modo lectura -->
+                    <p v-else class="text-gray-700 text-sm whitespace-pre-wrap">{{ comentario.contenido }}</p>
+                  </div>
+                </div>
+                
+                <!-- Botones de acción (solo si no está editando) -->
+                <div v-if="comentarioProyectoEditandoId !== comentario.id" class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    icon="pi pi-pencil"
+                    severity="secondary"
+                    text
+                    rounded
+                    size="small"
+                    @click="iniciarEdicionComentarioProyecto(comentario)"
+                   
+                  />
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    text
+                    rounded
+                    size="small"
+                    @click="confirmarEliminarComentarioProyecto(comentario)"
+                   
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input para nuevo comentario -->
+        <div class="pt-4 border-t border-gray-200 mt-4">
+          <div class="flex gap-2">
+            <Textarea
+              v-model="nuevoComentarioProyecto"
+              placeholder="Escribe un comentario..."
+              class="flex-1"
+              rows="2"
+              autoResize
+              @keydown.enter.prevent="enviarComentarioProyecto"
+              :disabled="comentariosProyectosStore.enviando"
+            />
+            <Button
+              icon="pi pi-send"
+              severity="primary"
+              @click="enviarComentarioProyecto"
+              :loading="comentariosProyectosStore.enviando"
+             
+              class="self-end"
             />
           </div>
         </div>

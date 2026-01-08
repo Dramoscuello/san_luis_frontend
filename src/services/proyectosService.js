@@ -1,8 +1,9 @@
 import axios from '@/lib/axios';
 
 export default {
-    getProyectos() {
-        return axios.get('/proyectos/');
+    getProyectos(docenteId = null) {
+        const params = docenteId ? { docente_id: docenteId } : {};
+        return axios.get('/proyectos/', { params });
     },
 
     getProyecto(id) {
@@ -28,5 +29,25 @@ export default {
 
     eliminarProyecto(id) {
         return axios.delete(`/proyectos/${id}`);
+    },
+
+    // ============================================
+    // EVIDENCIAS
+    // ============================================
+
+    getEvidencias(proyectoId) {
+        return axios.get(`/proyectos/${proyectoId}/evidencias`);
+    },
+
+    crearEvidencia(proyectoId, formData) {
+        return axios.post(`/proyectos/${proyectoId}/evidencias`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+
+    eliminarEvidencia(proyectoId, evidenciaId) {
+        return axios.delete(`/proyectos/${proyectoId}/evidencias/${evidenciaId}`);
     }
 };
