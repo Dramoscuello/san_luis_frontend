@@ -16,9 +16,12 @@ import Card from 'primevue/card';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import FileUpload from 'primevue/fileupload';
-import { onMounted, computed, ref } from 'vue';
+import Paginator from 'primevue/paginator';
+import { onMounted, computed, ref, watch } from 'vue';
 import { usePlaneacionesStore } from "@/stores/planeaciones.js";
 import { useAsignaturasStore } from "@/stores/asignaturas.js";
+import { useSedesStore } from "@/stores/sedes.js";
+import { usePeriodosStore } from "@/stores/periodos.js";
 import { useUserStore } from "@/stores/user.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -26,6 +29,8 @@ import { confirmAlert } from "@/lib/confirm.js";
 
 const planeacionesStore = usePlaneacionesStore();
 const asignaturasStore = useAsignaturasStore();
+const sedesStore = useSedesStore();
+const periodosStore = usePeriodosStore();
 const userStore = useUserStore();
 const toast = useToast();
 const confirm = useConfirm();
@@ -43,6 +48,82 @@ const asignaturaSeleccionada = ref(null);
 
 // Referencia al FileUpload para limpiarlo
 const fileUploadRef = ref(null);
+
+// ============================================
+// FILTROS Y PAGINACIÓN (Solo para Coordinadores/Rector)
+// ============================================
+
+// Filtros seleccionados
+const filtroSede = ref(null);
+const filtroAsignatura = ref(null);
+const filtroPeriodo = ref(null);
+
+// Paginación
+const first = ref(0);
+const rows = ref(8);
+
+// Watcher para limpiar otros filtros cuando se selecciona uno (filtro exclusivo)
+watch(filtroSede, (newVal) => {
+  if (newVal) {
+    filtroAsignatura.value = null;
+    filtroPeriodo.value = null;
+    first.value = 0; // Reset página
+  }
+});
+
+watch(filtroAsignatura, (newVal) => {
+  if (newVal) {
+    filtroSede.value = null;
+    filtroPeriodo.value = null;
+    first.value = 0;
+  }
+});
+
+watch(filtroPeriodo, (newVal) => {
+  if (newVal) {
+    filtroSede.value = null;
+    filtroAsignatura.value = null;
+    first.value = 0;
+  }
+});
+
+// Planeaciones filtradas según el criterio seleccionado
+const planeacionesFiltradas = computed(() => {
+  let resultado = planeacionesStore.planeaciones;
+
+  if (filtroSede.value) {
+    resultado = resultado.filter(p => p.sede_id === filtroSede.value.id);
+  } else if (filtroAsignatura.value) {
+    resultado = resultado.filter(p => p.asignatura?.id === filtroAsignatura.value.id);
+  } else if (filtroPeriodo.value) {
+    resultado = resultado.filter(p => p.periodo?.id === filtroPeriodo.value.id);
+  }
+
+  return resultado;
+});
+
+// Planeaciones paginadas
+const planeacionesPaginadas = computed(() => {
+  const start = first.value;
+  const end = start + rows.value;
+  return planeacionesFiltradas.value.slice(start, end);
+});
+
+// Total de registros (para el paginator)
+const totalRecords = computed(() => planeacionesFiltradas.value.length);
+
+// Función para cambiar de página
+const onPageChange = (event) => {
+  first.value = event.first;
+};
+
+// Limpiar todos los filtros
+const limpiarFiltros = () => {
+  filtroSede.value = null;
+  filtroAsignatura.value = null;
+  filtroPeriodo.value = null;
+  first.value = 0;
+};
 
 // Opciones de asignaturas (para docentes: sus asignaturas asignadas, para otros: todas)
 const asignaturasOptions = computed(() => {
@@ -63,8 +144,12 @@ onMounted(async () => {
     await planeacionesStore.getMisPlaneaciones();
   } else {
     await planeacionesStore.getPlaneaciones();
-    // Cargar todas las asignaturas para coordinadores/rector
-    await asignaturasStore.getAsignaturas();
+    // Cargar datos para los filtros (coordinadores/rector)
+    await Promise.all([
+      asignaturasStore.getAsignaturas(),
+      sedesStore.getSedes(),
+      periodosStore.getPeriodos()
+    ]);
   }
 });
 
@@ -399,11 +484,71 @@ const verArchivo = (planeacion) => {
 
           <!-- Panel derecho: Lista de planeaciones -->
           <div :class="isDocente ? 'flex-1 lg:max-w-xl' : 'flex-1'">
+            <!-- Filtros (solo para Coordinadores/Rector) -->
+            <div v-if="!isDocente" class="bg-white rounded-lg border border-gray-200 p-4 mb-4 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <i class="pi pi-filter text-blue-500"></i>
+                  Filtrar planeaciones
+                </h3>
+                <Button
+                  v-if="filtroSede || filtroAsignatura || filtroPeriodo"
+                  label="Limpiar filtros"
+                  icon="pi pi-times"
+                  severity="secondary"
+                  text
+                  size="small"
+                  @click="limpiarFiltros"
+                />
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Por Sede</label>
+                  <Select
+                    v-model="filtroSede"
+                    :options="sedesStore.sedes"
+                    optionLabel="nombre"
+                    placeholder="Selecciona sede"
+                    class="w-full"
+                    showClear
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Por Asignatura</label>
+                  <Select
+                    v-model="filtroAsignatura"
+                    :options="asignaturasStore.asignaturas"
+                    optionLabel="nombre"
+                    placeholder="Selecciona asignatura"
+                    class="w-full"
+                    showClear
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Por Periodo</label>
+                  <Select
+                    v-model="filtroPeriodo"
+                    :options="periodosStore.periodos"
+                    optionLabel="nombre"
+                    placeholder="Selecciona periodo"
+                    class="w-full"
+                    showClear
+                  />
+                </div>
+              </div>
+              <p v-if="filtroSede || filtroAsignatura || filtroPeriodo" class="text-xs text-blue-600 mt-2">
+                <i class="pi pi-info-circle mr-1"></i>
+                Solo se aplica un filtro a la vez. Al seleccionar uno, los demás se limpian automáticamente.
+              </p>
+            </div>
+
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-semibold text-gray-700">
                 {{ isDocente ? 'Mis planeaciones' : 'Todas las planeaciones' }}
               </h2>
-              <span class="text-sm text-gray-500">{{ planeacionesStore.planeaciones.length }} planeaciones</span>
+              <span class="text-sm text-gray-500">
+                {{ isDocente ? planeacionesStore.planeaciones.length : totalRecords }} planeaciones
+              </span>
             </div>
 
             <div :class="[
@@ -435,7 +580,7 @@ const verArchivo = (planeacion) => {
 
               <!-- Lista de planeaciones -->
               <div
-                v-for="plan in planeacionesStore.planeaciones"
+                v-for="plan in (isDocente ? planeacionesStore.planeaciones : planeacionesPaginadas)"
                 :key="plan.id"
                 class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 group"
                 :class="{'border-l-4 border-l-orange-400': isEditing && planeacionesStore.planeacion.id === plan.id}"
@@ -503,6 +648,20 @@ const verArchivo = (planeacion) => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Paginator (solo para Coordinadores/Rector) -->
+            <div v-if="!isDocente && totalRecords > rows" class="mt-4">
+              <Paginator
+                :first="first"
+                :rows="rows"
+                :totalRecords="totalRecords"
+                @page="onPageChange"
+                template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
+                :pt="{
+                  root: { class: 'bg-white rounded-lg border border-gray-200 p-2' }
+                }"
+              />
             </div>
           </div>
         </div>
