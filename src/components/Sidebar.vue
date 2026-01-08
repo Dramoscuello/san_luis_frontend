@@ -23,15 +23,16 @@ const esDirectivo = computed(() => {
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto py-6 px-3">
-      <!-- Home -->
+      <!-- Bienvenida -->
       <div class="mb-6">
+        <h2 class="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Bienvenida</h2>
         <ul class="space-y-1">
           <li>
             <RouterLink :to="{'name':'home'}" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition">
               <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              Home
+              Inicio
             </RouterLink>
           </li>
         </ul>
@@ -105,7 +106,7 @@ const esDirectivo = computed(() => {
               Planeaciones
             </RouterLink>
           </li>
-          <li>
+          <li v-if="!esDirectivo">
             <RouterLink :to="{'name':'home'}" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition">
               <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -113,7 +114,7 @@ const esDirectivo = computed(() => {
               Cronograma individual
             </RouterLink>
           </li>
-          <li>
+          <li v-if="!esDirectivo">
             <RouterLink :to="{'name':'home'}" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition">
               <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -122,7 +123,7 @@ const esDirectivo = computed(() => {
               Observador del estudiante
             </RouterLink>
           </li>
-          <li>
+          <li v-if="!esDirectivo">
             <RouterLink :to="{'name':'home'}" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition">
               <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -134,6 +135,28 @@ const esDirectivo = computed(() => {
         </ul>
       </div>
 
+      <!-- Informativo Section -->
+      <div class="mb-6">
+        <h2 class="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Informativo</h2>
+        <ul class="space-y-1">
+          <li>
+            <RouterLink :to="{'name':'planeaciones_destacadas'}" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition">
+              <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              Planeaciones destacadas
+            </RouterLink>
+          </li>
+          <li v-if="!esDirectivo">
+            <RouterLink :to="{'name':'home'}" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition">
+              <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+              </svg>
+              Publicaciones
+            </RouterLink>
+          </li>
+        </ul>
+      </div>
 
     </nav>
   </aside>

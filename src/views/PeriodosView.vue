@@ -93,14 +93,6 @@ onMounted(async () => {
         <!-- Header Section -->
         <div class="mb-6">
           <h1 class="text-2xl font-bold text-gray-800 mb-4">Periodos Academicos</h1>
-
-          <!-- Breadcrumb Navigation -->
-          <nav class="mb-4 bg-white rounded-lg px-4 py-3 shadow-sm flex items-center gap-2">
-            <div class="flex items-center gap-2 text-gray-800">
-              <i class="pi pi-calendar text-lg"></i>
-              <span class="font-medium">Periodos</span>
-            </div>
-          </nav>
         </div>
 
         <!-- Periodos Cards Grid -->

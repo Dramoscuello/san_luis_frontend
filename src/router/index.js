@@ -97,6 +97,12 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/planeaciones-destacadas',
+            name: 'planeaciones_destacadas',
+            component: () => import('../views/PlaneacionesDestacadasView.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
             path: '/login',
             redirect: '/'
         }

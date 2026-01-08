@@ -17,6 +17,8 @@ import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import FileUpload from 'primevue/fileupload';
 import Paginator from 'primevue/paginator';
+import Dialog from 'primevue/dialog';
+import Textarea from 'primevue/textarea';
 import { onMounted, computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePlaneacionesStore } from "@/stores/planeaciones.js";
@@ -24,6 +26,7 @@ import { useAsignaturasStore } from "@/stores/asignaturas.js";
 import { useSedesStore } from "@/stores/sedes.js";
 import { usePeriodosStore } from "@/stores/periodos.js";
 import { useUserStore } from "@/stores/user.js";
+import { usePlaneacionesDestacadasStore } from "@/stores/planeacionesDestacadas.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
@@ -33,6 +36,7 @@ const asignaturasStore = useAsignaturasStore();
 const sedesStore = useSedesStore();
 const periodosStore = usePeriodosStore();
 const userStore = useUserStore();
+const destacadasStore = usePlaneacionesDestacadasStore();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
@@ -50,6 +54,14 @@ const asignaturaSeleccionada = ref(null);
 
 // Referencia al FileUpload para limpiarlo
 const fileUploadRef = ref(null);
+
+// ============================================
+// MODAL DESTACAR PLANEACION (Solo Coordinadores/Rector)
+// ============================================
+const modalDestacadaVisible = ref(false);
+const planeacionADestacar = ref(null);
+const razonDestacada = ref('');
+const guardandoDestacada = ref(false);
 
 // ============================================
 // PARA DOCENTES: Últimas 5 planeaciones
@@ -144,11 +156,12 @@ onMounted(async () => {
     await planeacionesStore.getMisPlaneaciones();
   } else {
     await planeacionesStore.getPlaneaciones();
-    // Cargar datos para los filtros (coordinadores/rector)
+    // Cargar datos para los filtros y destacadas (coordinadores/rector)
     await Promise.all([
       asignaturasStore.getAsignaturas(),
       sedesStore.getSedes(),
-      periodosStore.getPeriodos()
+      periodosStore.getPeriodos(),
+      destacadasStore.getPlaneacionesDestacadas()
     ]);
   }
 });
@@ -331,6 +344,51 @@ const confirmarEliminar = (planeacion) => {
 const verArchivo = (planeacion) => {
   if (planeacion.drive_view_link) {
     window.open(planeacion.drive_view_link, '_blank');
+  }
+};
+
+// ============================================
+// FUNCIONES PARA DESTACAR PLANEACIONES
+// ============================================
+
+/**
+ * Abre el modal para destacar una planeacion
+ */
+const abrirModalDestacar = (planeacion) => {
+  planeacionADestacar.value = planeacion;
+  razonDestacada.value = '';
+  modalDestacadaVisible.value = true;
+};
+
+/**
+ * Cierra el modal de destacar
+ */
+const cerrarModalDestacar = () => {
+  modalDestacadaVisible.value = false;
+  planeacionADestacar.value = null;
+  razonDestacada.value = '';
+};
+
+/**
+ * Guarda la planeacion como destacada
+ */
+const guardarDestacada = async () => {
+  if (!razonDestacada.value.trim()) {
+    toast.add({ severity: 'warn', summary: 'Campo requerido', detail: 'La razon es obligatoria', life: 3000 });
+    return;
+  }
+
+  guardandoDestacada.value = true;
+  try {
+    await destacadasStore.marcarComoDestacada(planeacionADestacar.value.id, razonDestacada.value.trim());
+    toast.add({ severity: 'success', summary: 'Destacada', detail: 'La planeacion ha sido marcada como destacada', life: 3000 });
+    cerrarModalDestacar();
+  } catch (error) {
+    console.error('Error al destacar planeacion:', error);
+    const errorMsg = error.response?.data?.detail || 'No se pudo marcar la planeacion como destacada';
+    toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 5000 });
+  } finally {
+    guardandoDestacada.value = false;
   }
 };
 </script>
@@ -630,6 +688,18 @@ const verArchivo = (planeacion) => {
                       @click="verArchivo(plan)"
                       v-tooltip.top="'Ver archivo'"
                     />
+                    <!-- Boton destacar (solo coordinadores/rector) -->
+                    <Button
+                      v-if="!isDocente"
+                      :icon="destacadasStore.esDestacada(plan.id) ? 'pi pi-star-fill' : 'pi pi-star'"
+                      :severity="destacadasStore.esDestacada(plan.id) ? 'warning' : 'secondary'"
+                      text
+                      rounded
+                      size="small"
+                      @click="!destacadasStore.esDestacada(plan.id) && abrirModalDestacar(plan)"
+                      v-tooltip.top="destacadasStore.esDestacada(plan.id) ? 'Planeacion destacada' : 'Marcar como destacada'"
+                      :class="{ 'cursor-default': destacadasStore.esDestacada(plan.id) }"
+                    />
                     <Button
                       v-if="isDocente"
                       icon="pi pi-pencil"
@@ -684,6 +754,50 @@ const verArchivo = (planeacion) => {
         </div>
       </div>
     </main>
+
+    <!-- Modal para destacar planeacion -->
+    <Dialog
+      v-model:visible="modalDestacadaVisible"
+      modal
+      header="Destacar Planeacion"
+      :style="{ width: '450px' }"
+      :closable="!guardandoDestacada"
+      :closeOnEscape="!guardandoDestacada"
+    >
+      <div class="mb-4">
+        <p class="text-sm text-gray-600 mb-3">
+          Vas a destacar la planeacion: <strong>{{ planeacionADestacar?.titulo }}</strong>
+        </p>
+        <label for="razon" class="block font-semibold text-gray-700 mb-2">
+          Razon del destacado <span class="text-red-500">*</span>
+        </label>
+        <Textarea
+          id="razon"
+          v-model="razonDestacada"
+          rows="4"
+          placeholder="Escribe la razon por la cual esta planeacion merece ser destacada..."
+          class="w-full"
+          :disabled="guardandoDestacada"
+        />
+        <small class="text-gray-500">Este campo es obligatorio</small>
+      </div>
+      <template #footer>
+        <Button
+          label="Cancelar"
+          severity="secondary"
+          text
+          @click="cerrarModalDestacar"
+          :disabled="guardandoDestacada"
+        />
+        <Button
+          label="Destacar"
+          icon="pi pi-star-fill"
+          severity="warning"
+          @click="guardarDestacada"
+          :loading="guardandoDestacada"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
