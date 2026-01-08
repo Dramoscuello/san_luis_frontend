@@ -18,18 +18,35 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import FileUpload from 'primevue/fileupload';
 import { onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePublicacionesStore } from "@/stores/publicaciones.js";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
 
 const publicacionesStore = usePublicacionesStore();
+const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
 // Computed para saber si estamos editando
 const isEditing = computed(() => publicacionesStore.modoEdicion);
 const archivoActual = computed(() => publicacionesStore.publicacion.nombre_archivo);
+
+// Mostrar solo las 5 publicaciones más recientes
+const ultimasPublicaciones = computed(() => {
+  return publicacionesStore.publicaciones.slice(0, 5);
+});
+
+// Verificar si hay más de 5 publicaciones
+const hayMasPublicaciones = computed(() => {
+  return publicacionesStore.publicaciones.length > 5;
+});
+
+// Ir a ver todas las publicaciones
+const verTodasPublicaciones = () => {
+  router.push({ name: 'all_publicaciones' });
+};
 
 onMounted(async () => {
   await publicacionesStore.getPublicaciones();
@@ -209,6 +226,15 @@ const confirmarEliminar = (publicacion) => {
     }
   );
 };
+
+/**
+ * Abre el archivo en una nueva pestaña
+ */
+const verArchivo = (publicacion) => {
+  if (publicacion.drive_view_link) {
+    window.open(publicacion.drive_view_link, '_blank');
+  }
+};
 </script>
 
 <template>
@@ -361,11 +387,11 @@ const confirmarEliminar = (publicacion) => {
           <!-- Panel derecho: Lista de publicaciones -->
           <div class="flex-1 lg:max-w-xl">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-gray-700">Publicaciones recientes</h2>
-              <span class="text-sm text-gray-500">{{ publicacionesStore.publicaciones.length }} publicaciones</span>
+              <h2 class="text-lg font-semibold text-gray-700">Últimas publicaciones</h2>
+              <span class="text-sm text-gray-500">Mostrando {{ ultimasPublicaciones.length }} de {{ publicacionesStore.publicaciones.length }}</span>
             </div>
 
-            <div class="space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-2 custom-scrollbar">
+            <div class="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-2 custom-scrollbar">
               <!-- Loading state -->
               <div
                 v-if="publicacionesStore.loading && publicacionesStore.publicaciones.length === 0"
@@ -385,9 +411,9 @@ const confirmarEliminar = (publicacion) => {
                 <p class="text-gray-400 text-sm">Crea tu primera publicación usando el formulario.</p>
               </div>
 
-              <!-- Lista compacta de publicaciones -->
+              <!-- Lista compacta de publicaciones (máximo 5) -->
               <div
-                v-for="pub in publicacionesStore.publicaciones"
+                v-for="pub in ultimasPublicaciones"
                 :key="pub.id"
                 class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 group"
                 :class="{'border-l-4 border-l-orange-400': isEditing && publicacionesStore.publicacion.id === pub.id}"
@@ -420,6 +446,16 @@ const confirmarEliminar = (publicacion) => {
                   <!-- Botones de acciones -->
                   <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
+                      v-if="pub.drive_file_id"
+                      icon="pi pi-eye"
+                      severity="info"
+                      text
+                      rounded
+                      size="small"
+                      @click="verArchivo(pub)"
+                      v-tooltip.top="'Ver archivo'"
+                    />
+                    <Button
                       icon="pi pi-pencil"
                       severity="warning"
                       text
@@ -440,6 +476,18 @@ const confirmarEliminar = (publicacion) => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Botón para ver todas las publicaciones -->
+            <div v-if="publicacionesStore.publicaciones.length > 0" class="mt-4">
+              <Button
+                label="Mostrar detalles"
+                icon="pi pi-list"
+                severity="secondary"
+                outlined
+                class="w-full"
+                @click="verTodasPublicaciones"
+              />
             </div>
           </div>
         </div>

@@ -18,6 +18,7 @@ import Select from 'primevue/select';
 import FileUpload from 'primevue/fileupload';
 import Paginator from 'primevue/paginator';
 import { onMounted, computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePlaneacionesStore } from "@/stores/planeaciones.js";
 import { useAsignaturasStore } from "@/stores/asignaturas.js";
 import { useSedesStore } from "@/stores/sedes.js";
@@ -32,6 +33,7 @@ const asignaturasStore = useAsignaturasStore();
 const sedesStore = useSedesStore();
 const periodosStore = usePeriodosStore();
 const userStore = useUserStore();
+const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
@@ -50,6 +52,20 @@ const asignaturaSeleccionada = ref(null);
 const fileUploadRef = ref(null);
 
 // ============================================
+// PARA DOCENTES: Últimas 5 planeaciones
+// ============================================
+
+// Mostrar solo las 5 planeaciones más recientes (para docentes)
+const ultimasPlaneaciones = computed(() => {
+  return planeacionesStore.planeaciones.slice(0, 5);
+});
+
+// Ir a ver todas las planeaciones del docente
+const verTodasPlaneaciones = () => {
+  router.push({ name: 'mis_planeaciones' });
+};
+
+// ============================================
 // FILTROS Y PAGINACIÓN (Solo para Coordinadores/Rector)
 // ============================================
 
@@ -62,40 +78,24 @@ const filtroPeriodo = ref(null);
 const first = ref(0);
 const rows = ref(8);
 
-// Watcher para limpiar otros filtros cuando se selecciona uno (filtro exclusivo)
-watch(filtroSede, (newVal) => {
-  if (newVal) {
-    filtroAsignatura.value = null;
-    filtroPeriodo.value = null;
-    first.value = 0; // Reset página
-  }
+// Watcher para resetear página cuando cambia cualquier filtro
+watch([filtroSede, filtroAsignatura, filtroPeriodo], () => {
+  first.value = 0;
 });
 
-watch(filtroAsignatura, (newVal) => {
-  if (newVal) {
-    filtroSede.value = null;
-    filtroPeriodo.value = null;
-    first.value = 0;
-  }
-});
-
-watch(filtroPeriodo, (newVal) => {
-  if (newVal) {
-    filtroSede.value = null;
-    filtroAsignatura.value = null;
-    first.value = 0;
-  }
-});
-
-// Planeaciones filtradas según el criterio seleccionado
+// Planeaciones filtradas (se aplican todos los filtros activos simultáneamente)
 const planeacionesFiltradas = computed(() => {
   let resultado = planeacionesStore.planeaciones;
 
   if (filtroSede.value) {
     resultado = resultado.filter(p => p.sede_id === filtroSede.value.id);
-  } else if (filtroAsignatura.value) {
+  }
+  
+  if (filtroAsignatura.value) {
     resultado = resultado.filter(p => p.asignatura?.id === filtroAsignatura.value.id);
-  } else if (filtroPeriodo.value) {
+  }
+  
+  if (filtroPeriodo.value) {
     resultado = resultado.filter(p => p.periodo?.id === filtroPeriodo.value.id);
   }
 
@@ -538,21 +538,26 @@ const verArchivo = (planeacion) => {
               </div>
               <p v-if="filtroSede || filtroAsignatura || filtroPeriodo" class="text-xs text-blue-600 mt-2">
                 <i class="pi pi-info-circle mr-1"></i>
-                Solo se aplica un filtro a la vez. Al seleccionar uno, los demás se limpian automáticamente.
+                Los filtros se combinan para refinar la búsqueda.
               </p>
             </div>
 
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-semibold text-gray-700">
-                {{ isDocente ? 'Mis planeaciones' : 'Todas las planeaciones' }}
+                {{ isDocente ? 'Últimas planeaciones' : 'Todas las planeaciones' }}
               </h2>
               <span class="text-sm text-gray-500">
-                {{ isDocente ? planeacionesStore.planeaciones.length : totalRecords }} planeaciones
+                <template v-if="isDocente">
+                  Mostrando {{ ultimasPlaneaciones.length }} de {{ planeacionesStore.planeaciones.length }}
+                </template>
+                <template v-else>
+                  {{ totalRecords }} planeaciones
+                </template>
               </span>
             </div>
 
             <div :class="[
-              'max-h-[calc(100vh-220px)] overflow-y-auto pr-2 custom-scrollbar',
+              'max-h-[calc(100vh-280px)] overflow-y-auto pr-2 custom-scrollbar',
               isDocente ? 'space-y-3' : 'grid grid-cols-1 lg:grid-cols-2 gap-4'
             ]">
               <!-- Loading state -->
@@ -580,7 +585,7 @@ const verArchivo = (planeacion) => {
 
               <!-- Lista de planeaciones -->
               <div
-                v-for="plan in (isDocente ? planeacionesStore.planeaciones : planeacionesPaginadas)"
+                v-for="plan in (isDocente ? ultimasPlaneaciones : planeacionesPaginadas)"
                 :key="plan.id"
                 class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 group"
                 :class="{'border-l-4 border-l-orange-400': isEditing && planeacionesStore.planeacion.id === plan.id}"
@@ -661,6 +666,18 @@ const verArchivo = (planeacion) => {
                 :pt="{
                   root: { class: 'bg-white rounded-lg border border-gray-200 p-2' }
                 }"
+              />
+            </div>
+
+            <!-- Botón Más detalles (solo para Docentes) -->
+            <div v-if="isDocente && planeacionesStore.planeaciones.length > 0" class="mt-4">
+              <Button
+                label="Más detalles"
+                icon="pi pi-list"
+                severity="secondary"
+                outlined
+                class="w-full"
+                @click="verTodasPlaneaciones"
               />
             </div>
           </div>

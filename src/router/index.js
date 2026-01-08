@@ -43,6 +43,12 @@ const router = createRouter({
             meta: { requiresAuth: true }
         },
         {
+            path: '/all-publicaciones',
+            name: 'all_publicaciones',
+            component: () => import('../views/AllPublicacionesView.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
             path: '/areas',
             name: 'areas',
             component: () => import('../views/AreasView.vue'),
@@ -82,6 +88,12 @@ const router = createRouter({
             path: '/planeaciones',
             name: 'planeaciones',
             component: () => import('../views/PlaneacionesView.vue'),
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/mis-planeaciones',
+            name: 'mis_planeaciones',
+            component: () => import('../views/MisPlaneacionesView.vue'),
             meta: { requiresAuth: true }
         },
         {
