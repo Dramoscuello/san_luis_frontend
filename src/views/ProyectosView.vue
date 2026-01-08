@@ -170,6 +170,7 @@ const confirmarEliminar = (proyecto) => {
  * Ver Detalle de Proyecto
  */
 const verDetalle = (proyecto) => {
+  console.log('🔍 Proyecto seleccionado:', proyecto);
   proyectoSeleccionado.value = proyecto;
   modalDetalleVisible.value = true;
 };
