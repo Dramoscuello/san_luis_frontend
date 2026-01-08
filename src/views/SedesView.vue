@@ -541,7 +541,7 @@ onMounted(async () => {
             class="sede-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-blue-600 px-4 py-4">
+            <div class="card-header bg-gradient-to-r from-blue-400 to-green-400 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ sede.nombre }}
               </h3>
@@ -626,7 +626,7 @@ onMounted(async () => {
             class="grado-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-blue-600 px-4 py-4">
+            <div class="card-header bg-gradient-to-r from-blue-400 to-green-400 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ grado.nombre }}
               </h3>
@@ -689,7 +689,7 @@ onMounted(async () => {
             class="grupo-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-blue-600 px-4 py-4">
+            <div class="card-header bg-gradient-to-r from-blue-400 to-green-400 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ grupo.nombre }}
               </h3>

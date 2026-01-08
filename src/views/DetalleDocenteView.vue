@@ -28,6 +28,7 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
 import { usePeriodosStore } from "@/stores/periodos.js";
+import { authService } from "@/services/auth.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -57,6 +58,12 @@ const rows = ref(8);
 const filtroAsignatura = ref(null);
 const filtroPeriodo = ref(null);
 
+// Verificar rol de directivo (Coordinador o Rector)
+const esDirectivo = computed(() => {
+  const role = authService.getUserRole();
+  return role === 'coordinador' || role === 'rector';
+});
+
 // Watcher para resetear página cuando cambia cualquier filtro
 watch([filtroAsignatura, filtroPeriodo], () => {
   first.value = 0;
@@ -79,28 +86,28 @@ const modulos = [
     id: 'planeaciones',
     titulo: 'Planeaciones',
     icono: 'pi-file',
-    color: 'bg-blue-600',
+    color: 'bg-gradient-to-r from-blue-400 to-green-400',
     activo: true
   },
   {
     id: 'observador',
     titulo: 'Observador del estudiante',
     icono: 'pi-users',
-    color: 'bg-green-600',
+    color: 'bg-gradient-to-r from-blue-400 to-green-400',
     activo: false
   },
   {
     id: 'proyectos',
     titulo: 'Proyectos',
     icono: 'pi-briefcase',
-    color: 'bg-purple-600',
+    color: 'bg-gradient-to-r from-blue-400 to-green-400',
     activo: false
   },
   {
     id: 'cronograma',
     titulo: 'Cronograma individual',
     icono: 'pi-calendar',
-    color: 'bg-orange-600',
+    color: 'bg-gradient-to-r from-blue-400 to-green-400',
     activo: false
   }
 ];
@@ -734,12 +741,13 @@ const formatComentarioDate = (dateString) => {
                 </div>
                 <!-- Botón eliminar -->
                 <Button
+                  v-if="esDirectivo"
                   icon="pi pi-trash"
                   severity="danger"
                   text
                   rounded
                   size="small"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  class="flex-shrink-0"
                   @click="confirmarEliminarComentario(comentario)"
                   v-tooltip.top="'Eliminar comentario'"
                 />
@@ -749,7 +757,7 @@ const formatComentarioDate = (dateString) => {
         </div>
 
         <!-- Input para nuevo comentario -->
-        <div class="pt-4 border-t border-gray-200 mt-4">
+        <div v-if="esDirectivo" class="pt-4 border-t border-gray-200 mt-4">
           <div class="flex gap-2">
             <InputText
               v-model="nuevoComentario"

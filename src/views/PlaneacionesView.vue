@@ -45,7 +45,7 @@ const confirm = useConfirm();
 
 // Usuario actual desde el store
 const currentUser = computed(() => userStore.userLogged);
-const isDocente = computed(() => currentUser.value?.rol?.toLowerCase() === 'docente');
+const isDocente = computed(() => currentUser.value?.rol?.trim().toLowerCase() === 'docente');
 
 // Computed para saber si estamos editando
 const isEditing = computed(() => planeacionesStore.modoEdicion);
@@ -72,9 +72,14 @@ const modalComentariosVisible = ref(false);
 const planeacionComentarios = ref(null);
 const nuevoComentario = ref('');
 
+// Estado para edición de comentarios
+const comentarioEditandoId = ref(null);
+const contenidoEditado = ref('');
+const editandoLoading = ref(false);
+
 // Computed para verificar si es directivo (coordinador o rector)
 const isDirectivo = computed(() => {
-  const rol = currentUser.value?.rol?.toLowerCase();
+  const rol = currentUser.value?.rol?.trim().toLowerCase();
   return rol === 'coordinador' || rol === 'rector';
 });
 
@@ -480,6 +485,45 @@ const confirmarEliminarComentario = (comentario) => {
       }
     }
   );
+};
+
+/**
+ * Inicia la edición de un comentario
+ */
+const iniciarEdicion = (comentario) => {
+  comentarioEditandoId.value = comentario.id;
+  contenidoEditado.value = comentario.contenido;
+};
+
+/**
+ * Cancela la edición del comentario
+ */
+const cancelarEdicion = () => {
+  comentarioEditandoId.value = null;
+  contenidoEditado.value = '';
+};
+
+/**
+ * Guarda el comentario editado
+ */
+const guardarEdicion = async (comentarioId) => {
+  if (!contenidoEditado.value.trim()) {
+    toast.add({ severity: 'warn', summary: 'Campo requerido', detail: 'El comentario no puede estar vacio', life: 3000 });
+    return;
+  }
+
+  editandoLoading.value = true;
+  try {
+    await comentariosStore.actualizarComentario(comentarioId, contenidoEditado.value.trim());
+    toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Comentario actualizado correctamente', life: 3000 });
+    cancelarEdicion();
+  } catch (error) {
+    console.error('Error al actualizar comentario:', error);
+    const errorMsg = error.response?.data?.detail || 'No se pudo actualizar el comentario';
+    toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 5000 });
+  } finally {
+    editandoLoading.value = false;
+  }
 };
 
 /**
@@ -945,13 +989,13 @@ const formatComentarioDate = (dateString) => {
               class="bg-gray-50 rounded-lg p-3 border border-gray-100 group"
             >
               <div class="flex items-start justify-between gap-2">
-                <div class="flex items-start gap-3">
+                <div class="flex items-start gap-3 flex-1">
                   <!-- Avatar -->
                   <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                     {{ getInitials(comentario.coordinador?.nombre_completo || comentario.autor_nombre) }}
                   </div>
                   <!-- Contenido -->
-                  <div>
+                  <div class="flex-1">
                     <div class="flex items-center gap-2">
                       <span class="font-semibold text-gray-800 text-sm">
                         {{ comentario.coordinador?.nombre_completo || comentario.autor_nombre || 'Coordinador' }}
@@ -960,21 +1004,63 @@ const formatComentarioDate = (dateString) => {
                         {{ formatComentarioDate(comentario.created_at) }}
                       </span>
                     </div>
-                    <p class="text-gray-700 text-sm mt-1">{{ comentario.contenido }}</p>
+                    <!-- Modo edición -->
+                    <div v-if="comentarioEditandoId === comentario.id" class="mt-2">
+                      <div class="flex gap-2 items-center">
+                        <InputText
+                          v-model="contenidoEditado"
+                          class="flex-1 text-sm"
+                          :disabled="editandoLoading"
+                          @keyup.enter="guardarEdicion(comentario.id)"
+                          @keyup.escape="cancelarEdicion"
+                        />
+                        <Button
+                          icon="pi pi-check"
+                          severity="success"
+                          text
+                          rounded
+                          size="small"
+                          @click="guardarEdicion(comentario.id)"
+                          :loading="editandoLoading"
+                          v-tooltip.top="'Guardar'"
+                        />
+                        <Button
+                          icon="pi pi-times"
+                          severity="secondary"
+                          text
+                          rounded
+                          size="small"
+                          @click="cancelarEdicion"
+                          :disabled="editandoLoading"
+                          v-tooltip.top="'Cancelar'"
+                        />
+                      </div>
+                    </div>
+                    <!-- Modo visualización -->
+                    <p v-else class="text-gray-700 text-sm mt-1">{{ comentario.contenido }}</p>
                   </div>
                 </div>
-                <!-- Botón eliminar (solo directivos) -->
-                <Button
-                  v-if="isDirectivo"
-                  icon="pi pi-trash"
-                  severity="danger"
-                  text
-                  rounded
-                  size="small"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                  @click="confirmarEliminarComentario(comentario)"
-                  v-tooltip.top="'Eliminar comentario'"
-                />
+                <!-- Botones editar y eliminar (solo directivos) -->
+                <div v-if="isDirectivo && comentarioEditandoId !== comentario.id" class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <Button
+                    icon="pi pi-pencil"
+                    severity="warning"
+                    text
+                    rounded
+                    size="small"
+                    @click="iniciarEdicion(comentario)"
+                    v-tooltip.top="'Editar comentario'"
+                  />
+                  <Button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    text
+                    rounded
+                    size="small"
+                    @click="confirmarEliminarComentario(comentario)"
+                    v-tooltip.top="'Eliminar comentario'"
+                  />
+                </div>
               </div>
             </div>
           </div>

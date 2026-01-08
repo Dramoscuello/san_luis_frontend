@@ -106,7 +106,7 @@ onMounted(async () => {
             <!-- Card Header -->
             <div
               class="card-header px-4 py-4"
-              :class="periodo.activo ? 'bg-blue-600' : 'bg-gray-400'"
+              :class="periodo.activo ? 'bg-gradient-to-r from-blue-400 to-green-400' : 'bg-gray-400'"
             >
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ periodo.nombre }}

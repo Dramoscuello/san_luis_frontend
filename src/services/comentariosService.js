@@ -56,5 +56,23 @@ export const comentariosService = {
         } catch (error) {
             throw error;
         }
+    },
+
+    /**
+     * Actualiza el contenido de un comentario
+     * Solo coordinadores/rector pueden actualizar comentarios
+     * @param {number} comentarioId - ID del comentario a actualizar
+     * @param {string} contenido - Nuevo contenido del comentario
+     * @returns {Promise<Object>} Comentario actualizado
+     */
+    async actualizarComentario(comentarioId, contenido) {
+        try {
+            const { data } = await api.patch(`/comentarios/${comentarioId}`, {
+                contenido
+            });
+            return data;
+        } catch (error) {
+            throw error;
+        }
     }
 }

@@ -32,8 +32,12 @@ export const useUserStore = defineStore("user", () => {
 
     async function getUserLogged() {
         try {
-            const username = await authService.getUser()
-            const response = await userService.getInfoUserLogged(username)
+            const user = authService.getUser();
+            if (!user?.cedula) {
+                console.error('No se encontró usuario en localStorage');
+                return;
+            }
+            const response = await userService.getInfoUserLogged(user.cedula)
             userLogged.email = response.email;
             userLogged.nombre_completo = response.nombre_completo;
             userLogged.cedula = response.cedula;

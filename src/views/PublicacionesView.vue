@@ -279,7 +279,7 @@ const verArchivo = (publicacion) => {
                   <InputText
                     id="titulo"
                     v-model="publicacionesStore.publicacion.titulo"
-                    placeholder="Ej: Reunión general de docentes"
+                    placeholder="Ej: Formato de clases actualizado"
                     class="w-full"
                   />
                 </div>

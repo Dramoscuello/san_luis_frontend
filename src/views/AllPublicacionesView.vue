@@ -13,7 +13,8 @@ import Sidebar from "@/components/Sidebar.vue";
 import Header from "@/components/Header.vue";
 import Button from 'primevue/button';
 import Paginator from 'primevue/paginator';
-import { onMounted, computed, ref } from 'vue';
+import InputText from 'primevue/inputtext';
+import { onMounted, computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePublicacionesStore } from "@/stores/publicaciones.js";
 import { useUserStore } from "@/stores/user.js";
@@ -49,15 +50,39 @@ const puedeEditar = computed(() => {
 const first = ref(0);
 const rows = ref(8);
 
-// Publicaciones paginadas
+// Filtro de búsqueda por título
+const searchQuery = ref('');
+
+// Publicaciones filtradas por título
+const publicacionesFiltradas = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return publicacionesStore.publicaciones;
+  }
+  const query = searchQuery.value.toLowerCase().trim();
+  return publicacionesStore.publicaciones.filter(pub => 
+    pub.titulo?.toLowerCase().includes(query)
+  );
+});
+
+// Publicaciones paginadas (sobre las filtradas)
 const publicacionesPaginadas = computed(() => {
   const start = first.value;
   const end = start + rows.value;
-  return publicacionesStore.publicaciones.slice(start, end);
+  return publicacionesFiltradas.value.slice(start, end);
 });
 
-// Total de registros
-const totalRecords = computed(() => publicacionesStore.publicaciones.length);
+// Total de registros (de las filtradas)
+const totalRecords = computed(() => publicacionesFiltradas.value.length);
+
+// Resetear página cuando cambia la búsqueda
+watch(searchQuery, () => {
+  first.value = 0;
+});
+
+// Limpiar búsqueda
+const limpiarBusqueda = () => {
+  searchQuery.value = '';
+};
 
 // Cambio de página
 const onPageChange = (event) => {
@@ -204,6 +229,30 @@ const volverAGestion = () => {
           </span>
         </div>
 
+        <!-- Barra de búsqueda -->
+        <div class="bg-white rounded-lg border border-gray-200 p-4 mb-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="relative flex-1 max-w-md">
+              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"></i>
+              <InputText
+                v-model="searchQuery"
+                placeholder="Buscar por título..."
+                class="w-full"
+                :style="{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }"
+              />
+              <i 
+                v-if="searchQuery"
+                class="pi pi-times absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600 z-10"
+                @click="limpiarBusqueda"
+              ></i>
+            </div>
+            <span v-if="searchQuery" class="text-sm text-blue-600">
+              <i class="pi pi-info-circle mr-1"></i>
+              {{ totalRecords }} resultado(s) encontrado(s)
+            </span>
+          </div>
+        </div>
+
         <!-- Grid de publicaciones -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <!-- Loading state -->
@@ -215,7 +264,7 @@ const volverAGestion = () => {
             <p class="text-gray-500 text-sm">Cargando...</p>
           </div>
 
-          <!-- Empty state -->
+          <!-- Empty state: Sin publicaciones -->
           <div
             v-else-if="publicacionesStore.publicaciones.length === 0"
             class="lg:col-span-2 text-center py-10 bg-white rounded-lg border border-gray-200"
@@ -223,6 +272,25 @@ const volverAGestion = () => {
             <i class="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
             <h4 class="font-semibold text-gray-600 mb-1">Sin publicaciones</h4>
             <p class="text-gray-400 text-sm">No hay publicaciones disponibles.</p>
+          </div>
+
+          <!-- Empty state: Búsqueda sin resultados -->
+          <div
+            v-else-if="publicacionesFiltradas.length === 0"
+            class="lg:col-span-2 text-center py-10 bg-white rounded-lg border border-gray-200"
+          >
+            <i class="pi pi-search text-4xl text-gray-300 mb-3"></i>
+            <h4 class="font-semibold text-gray-600 mb-1">Sin resultados</h4>
+            <p class="text-gray-400 text-sm">No se encontraron publicaciones con el título "{{ searchQuery }}"</p>
+            <Button
+              label="Limpiar búsqueda"
+              icon="pi pi-times"
+              severity="secondary"
+              text
+              size="small"
+              class="mt-3"
+              @click="limpiarBusqueda"
+            />
           </div>
 
           <!-- Lista de publicaciones -->

@@ -235,7 +235,7 @@ onMounted(async () => {
             class="area-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-blue-600 px-4 py-4">
+            <div class="card-header bg-gradient-to-r from-blue-400 to-green-400 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ area.nombre }}
               </h3>
@@ -312,7 +312,7 @@ onMounted(async () => {
             class="asignatura-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <!-- Card Header -->
-            <div class="card-header bg-blue-600 px-4 py-4">
+            <div class="card-header bg-gradient-to-r from-blue-400 to-green-400 px-4 py-4">
               <h3 class="text-white text-lg font-semibold text-center truncate">
                 {{ asignatura.nombre }}
               </h3>

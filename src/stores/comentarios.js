@@ -80,6 +80,22 @@ export const useComentariosStore = defineStore('comentarios', () => {
     };
 
     /**
+     * Actualiza el contenido de un comentario
+     * @param {number} comentarioId - ID del comentario a actualizar
+     * @param {string} contenido - Nuevo contenido
+     * @returns {Promise<Object>} Comentario actualizado
+     */
+    const actualizarComentario = async (comentarioId, contenido) => {
+        const comentarioActualizado = await comentariosService.actualizarComentario(comentarioId, contenido);
+        // Actualizar en el store local
+        const index = comentarios.value.findIndex(c => c.id === comentarioId);
+        if (index > -1) {
+            comentarios.value[index].contenido = comentarioActualizado.contenido;
+        }
+        return comentarioActualizado;
+    };
+
+    /**
      * Limpia los comentarios (al cerrar modal)
      */
     const limpiarComentarios = () => {
@@ -102,6 +118,7 @@ export const useComentariosStore = defineStore('comentarios', () => {
         getComentarios,
         crearComentario,
         eliminarComentario,
+        actualizarComentario,
         limpiarComentarios
     };
 });
