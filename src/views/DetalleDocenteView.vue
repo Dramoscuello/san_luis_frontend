@@ -37,6 +37,11 @@ import { userService } from "@/services/userService.js";
 import { estudiantesService } from "@/services/estudiantesService.js";
 import { observadoresService } from "@/services/observadoresService.js";
 import { generarObservador } from '@/utils/observadorGenerator';
+import { cronogramaService } from "@/services/cronogramaService.js";
+import FullCalendar from '@fullcalendar/vue3';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import esLocale from '@fullcalendar/core/locales/es';
 
 const route = useRoute();
 const router = useRouter();
@@ -72,6 +77,44 @@ const loadingGrupos = ref(false);
 const grupoSeleccionado = ref(null);
 const estudiantesGrupo = ref([]);
 const loadingEstudiantes = ref(false);
+
+// Cronograma del Docente
+const cronogramaDocente = ref(null);
+const actividadesDocente = ref([]);
+const loadingCronograma = ref(false);
+const currentYear = new Date().getFullYear();
+
+// Modal ver actividad cronograma (Read-Only)
+const modalVerActividadVisible = ref(false);
+const actividadSeleccionadaCronograma = ref(null);
+
+const calendarOptions = computed(() => ({
+  plugins: [ dayGridPlugin, interactionPlugin ],
+  initialView: 'dayGridMonth',
+  locale: esLocale,
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth'
+  },
+  validRange: {
+    start: `${currentYear}-01-01`,
+    end: `${currentYear}-12-31`
+  },
+  events: actividadesDocente.value.map(act => ({
+    id: act.id,
+    title: act.titulo,
+    start: act.fecha_programada,
+    classNames: [`fc-event-${act.estado}`],
+    extendedProps: { ...act }
+  })),
+  eventClick: (info) => {
+      actividadSeleccionadaCronograma.value = info.event.extendedProps;
+      modalVerActividadVisible.value = true;
+  },
+  editable: false, 
+  height: 'auto'
+}));
 
 // Paginación
 const first = ref(0);
@@ -142,7 +185,7 @@ const modulos = [
     titulo: 'Cronograma individual',
     icono: 'pi-calendar',
     color: 'bg-gradient-to-r from-blue-400 to-green-400',
-    activo: false
+    activo: true
   }
 ];
 
@@ -247,6 +290,20 @@ const cargarGruposDocente = async () => {
   }
 };
 
+const cargarCronogramaDocente = async () => {
+    loadingCronograma.value = true;
+    try {
+        const data = await cronogramaService.getCronogramaDocente(docente.value.id, currentYear);
+        cronogramaDocente.value = data;
+        actividadesDocente.value = data ? data.actividades : [];
+    } catch (error) {
+        console.error('Error cargando cronograma docente:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el cronograma' });
+    } finally {
+        loadingCronograma.value = false;
+    }
+};
+
 // Navegar a un módulo
 const navegarAModulo = async (modulo) => {
   if (!modulo.activo) return;
@@ -260,6 +317,9 @@ const navegarAModulo = async (modulo) => {
   } else if (modulo.id === 'proyectos') {
     currentView.value = 'proyectos';
     await cargarProyectos();
+  } else if (modulo.id === 'cronograma') {
+    currentView.value = 'cronograma';
+    await cargarCronogramaDocente();
   }
 };
 
@@ -1317,10 +1377,99 @@ const confirmarEliminarComentarioProyecto = (comentario) => {
             </template>
           </div>
 
+          <!-- ============ CRONOGRAMA VIEW ============ -->
+          <div v-if="currentView === 'cronograma'">
+            <!-- Loading -->
+            <div v-if="loadingCronograma" class="flex items-center justify-center h-64">
+              <i class="pi pi-spin pi-spinner text-3xl text-blue-500"></i>
+            </div>
+            
+            <template v-else>
+               <!-- Empty State -->
+               <div v-if="!cronogramaDocente" class="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-gray-200 h-80">
+                 <i class="pi pi-calendar-times text-4xl text-gray-300 mb-4"></i>
+                 <h3 class="text-lg font-semibold text-gray-700">Sin Cronograma</h3>
+                 <p class="text-gray-500 text-sm">Este docente no ha creado su cronograma para el año {{ currentYear }}.</p>
+               </div>
 
+               <!-- Calendar -->
+               <div v-else class="space-y-6">
+                 <!-- Header Info -->
+                 <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex justify-between items-start">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">{{ cronogramaDocente.titulo }}</h2>
+                        <p class="text-gray-600 mt-1" v-if="cronogramaDocente.descripcion">{{ cronogramaDocente.descripcion }}</p>
+                    </div>
+                    <div class="flex gap-4 text-sm mt-2">
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><span>Pendiente</span></div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div><span>Completada</span></div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-orange-500"></div><span>Retrasada</span></div>
+                    </div>
+                 </div>
+
+                 <!-- FullCalendar -->
+                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <FullCalendar :options="calendarOptions" />
+                 </div>
+               </div>
+            </template>
+          </div>
         </template>
       </div>
     </main>
+
+    <!-- Modal Ver Detalle Actividad (Read Only) -->
+    <Dialog v-model:visible="modalVerActividadVisible" modal header="Detalle Actividad" :style="{ width: '400px' }">
+        <div v-if="actividadSeleccionadaCronograma" class="space-y-4">
+            <div>
+                <label class="font-bold text-gray-500 text-xs uppercase">Título</label>
+                <p class="text-gray-900 border-b pb-1 font-medium">{{ actividadSeleccionadaCronograma.titulo }}</p>
+            </div>
+             <div>
+                <label class="font-bold text-gray-500 text-xs uppercase">Fecha</label>
+                <p class="text-gray-900 border-b pb-1">{{ actividadSeleccionadaCronograma.fecha_programada }}</p>
+            </div>
+             <div>
+                <label class="font-bold text-gray-500 text-xs uppercase">Estado</label>
+                <div class="mt-1">
+                     <span class="px-2 py-1 rounded-full text-xs font-semibold uppercase" 
+                        :class="{
+                            'bg-red-100 text-red-700': actividadSeleccionadaCronograma.estado === 'pendiente',
+                            'bg-green-100 text-green-700': actividadSeleccionadaCronograma.estado === 'completada',
+                            'bg-orange-100 text-orange-700': actividadSeleccionadaCronograma.estado === 'retrasada',
+                        }">
+                        {{ actividadSeleccionadaCronograma.estado }}
+                    </span>
+                </div>
+            </div>
+             <div v-if="actividadSeleccionadaCronograma.descripcion">
+                <label class="font-bold text-gray-500 text-xs uppercase">Descripción</label>
+                <p class="text-gray-700 mt-1 bg-gray-50 p-2 rounded text-sm">{{ actividadSeleccionadaCronograma.descripcion }}</p>
+            </div>
+
+            <!-- Evidencias -->
+             <div>
+                <label class="font-bold text-gray-500 text-xs uppercase mb-2 block">Evidencias ({{ actividadSeleccionadaCronograma.evidencias?.length || 0 }})</label>
+                <div v-if="actividadSeleccionadaCronograma.evidencias && actividadSeleccionadaCronograma.evidencias.length > 0" class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    <div v-for="evi in actividadSeleccionadaCronograma.evidencias" :key="evi.id" class="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm hover:bg-gray-100 transition">
+                        <div class="flex flex-col overflow-hidden mr-3">
+                            <span class="font-semibold text-gray-900 text-xs truncate" :title="evi.nombre_archivo">{{ evi.nombre_archivo }}</span>
+                            <span v-if="evi.comentario_docente" class="text-xs text-gray-500 truncate" :title="evi.comentario_docente">
+                                {{ evi.comentario_docente }}
+                            </span>
+                        </div>
+                        <a :href="evi.drive_view_link" target="_blank" class="p-button p-component p-button-icon-only p-button-rounded p-button-text p-button-sm p-button-info flex-shrink-0">
+                            <span class="pi pi-eye"></span>
+                        </a>
+                    </div>
+                </div>
+                <p v-else class="text-gray-400 text-sm italic border-t pt-2">Sin evidencias cargadas.</p>
+            </div>
+        </div>
+        <template #footer>
+            <Button label="Cerrar" text severity="secondary" @click="modalVerActividadVisible = false" />
+        </template>
+    </Dialog>
 
     <!-- Modal para destacar planeación -->
     <Dialog
@@ -1644,5 +1793,61 @@ const confirmarEliminarComentarioProyecto = (comentario) => {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Personalización de FullCalendar */
+:deep(.fc-button-primary) {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+:deep(.fc-button-primary:hover) {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+:deep(.fc-button-primary:disabled) {
+  background-color: #93c5fd !important;
+  border-color: #93c5fd !important;
+}
+:deep(.fc-toolbar-title) {
+  color: #1e40af;
+  font-weight: bold;
+}
+:deep(.fc-col-header-cell-cushion) {
+  color: #1e3a8a;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* Event Status Colors */
+:deep(.fc-event-pendiente) {
+  background-color: #ef4444 !important; /* Red-500 */
+  border-color: #ef4444 !important;
+}
+
+:deep(.fc-event-completada) {
+  background-color: #22c55e !important; /* Green-500 */
+  border-color: #22c55e !important;
+}
+
+:deep(.fc-event-retrasada) {
+  background-color: #f97316 !important; /* Orange-500 */
+  border-color: #f97316 !important;
+}
+
+:deep(.fc-event-cancelada) {
+  background-color: #6b7280 !important; /* Gray-500 */
+  border-color: #6b7280 !important;
+  text-decoration: line-through;
+}
+
+:deep(.fc-event) {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.85rem;
+    transition: transform 0.1s ease;
+}
+:deep(.fc-event:hover) {
+    transform: scale(1.02);
 }
 </style>

@@ -324,7 +324,7 @@ watch(() => props.visible, (newVal) => {
                 <div class="flex items-center gap-3 overflow-hidden">
                     <i class="pi pi-file text-blue-500 text-xl"></i>
                     <div class="flex flex-col min-w-0">
-                        <span class="text-sm font-medium text-gray-800 truncate" :title="evi.nombre_archivo">{{ evi.nombre_archivo_original || 'Archivo' }}</span>
+                        <span class="text-sm font-medium text-gray-800 truncate" :title="evi.nombre_archivo">{{ evi.nombre_archivo }}</span>
                         <span class="text-xs text-gray-500 truncate" v-if="evi.comentario_docente">{{ evi.comentario_docente }}</span>
                     </div>
                 </div>
