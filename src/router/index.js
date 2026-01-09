@@ -56,6 +56,12 @@ const router = createRouter({
             meta: { requiresAuth: true, roles: ['docente'] }
         },
         {
+            path: '/cronograma',
+            name: 'cronograma',
+            component: () => import('../views/CronogramaView.vue'),
+            meta: { requiresAuth: true, roles: ['docente'] }
+        },
+        {
             path: '/observador',
             name: 'observador',
             component: () => import('../views/ObservadorView.vue'),
