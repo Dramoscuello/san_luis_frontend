@@ -76,5 +76,14 @@ export const userService = {
         } catch (e) {
             throw e;
         }
+    },
+
+    async getGruposDocente(docenteId) {
+        try {
+            const { data } = await api.get(`/user/${docenteId}/grupos`);
+            return data;
+        } catch (error) {
+            throw error;
+        }
     }
 }

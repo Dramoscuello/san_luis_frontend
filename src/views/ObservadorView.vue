@@ -51,6 +51,11 @@ const openObservador = (estudiante) => {
   showModalObservador.value = true;
 };
 
+const handleEdit = (estudiante) => {
+  // TODO: Implementar edición del estudiante
+  console.log('Editar estudiante:', estudiante);
+};
+
 const handleReport = async (estudiante) => {
     try {
         console.log(`Generando reporte para: ${estudiante.nombres} ${estudiante.apellidos}`);
@@ -215,6 +220,12 @@ onMounted(async () => {
                   <Column header="Opciones" style="width: 20%">
                     <template #body="slotProps">
                       <div class="flex gap-2">
+                        <Button
+                          icon="pi pi-pencil"
+                          class="p-button-rounded p-button-sm"
+                          severity="help"
+                          @click="handleEdit(slotProps.data)"
+                        />
                         <Button
                           icon="pi pi-eye"
                           class="p-button-rounded p-button-sm"

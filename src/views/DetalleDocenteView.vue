@@ -18,6 +18,8 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from "@/stores/user.js";
@@ -31,6 +33,10 @@ import { useConfirm } from "primevue/useconfirm";
 import { confirmAlert } from "@/lib/confirm.js";
 import { usePeriodosStore } from "@/stores/periodos.js";
 import { authService } from "@/services/auth.js";
+import { userService } from "@/services/userService.js";
+import { estudiantesService } from "@/services/estudiantesService.js";
+import { observadoresService } from "@/services/observadoresService.js";
+import { generarObservador } from '@/utils/observadorGenerator';
 
 const route = useRoute();
 const router = useRouter();
@@ -43,7 +49,7 @@ const confirm = useConfirm();
 const periodosStore = usePeriodosStore();
 
 // Estado de navegación interna
-const currentView = ref('modulos'); // 'modulos' | 'planeaciones' | 'proyectos'
+const currentView = ref('modulos'); // 'modulos' | 'planeaciones' | 'observador' | 'proyectos'
 
 // Datos del docente
 const docente = ref(null);
@@ -59,6 +65,13 @@ const loadingProyectos = ref(false);
 const proyectoSeleccionado = ref(null);
 const evidenciasProyecto = ref([]);
 const loadingEvidencias = ref(false);
+
+// Observador - Grupos del docente
+const gruposDocente = ref([]);
+const loadingGrupos = ref(false);
+const grupoSeleccionado = ref(null);
+const estudiantesGrupo = ref([]);
+const loadingEstudiantes = ref(false);
 
 // Paginación
 const first = ref(0);
@@ -115,7 +128,7 @@ const modulos = [
     titulo: 'Observador del estudiante',
     icono: 'pi-users',
     color: 'bg-gradient-to-r from-blue-400 to-green-400',
-    activo: false
+    activo: true
   },
   {
     id: 'proyectos',
@@ -220,6 +233,20 @@ onMounted(async () => {
   }
 });
 
+// Cargar grupos del docente para el observador
+const cargarGruposDocente = async () => {
+  loadingGrupos.value = true;
+  try {
+    const data = await userService.getGruposDocente(docente.value.id);
+    gruposDocente.value = data;
+  } catch (error) {
+    console.error('Error al cargar grupos del docente:', error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los grupos del docente', life: 3000 });
+  } finally {
+    loadingGrupos.value = false;
+  }
+};
+
 // Navegar a un módulo
 const navegarAModulo = async (modulo) => {
   if (!modulo.activo) return;
@@ -227,6 +254,9 @@ const navegarAModulo = async (modulo) => {
   if (modulo.id === 'planeaciones') {
     currentView.value = 'planeaciones';
     await cargarPlaneaciones();
+  } else if (modulo.id === 'observador') {
+    currentView.value = 'observador';
+    await cargarGruposDocente();
   } else if (modulo.id === 'proyectos') {
     currentView.value = 'proyectos';
     await cargarProyectos();
@@ -267,10 +297,84 @@ const volverAModulos = () => {
   planeaciones.value = [];
   proyectos.value = [];
   proyectoSeleccionado.value = null;
+  gruposDocente.value = [];
+  grupoSeleccionado.value = null;
+  estudiantesGrupo.value = [];
   first.value = 0;
   // Limpiar filtros
   filtroAsignatura.value = null;
   filtroPeriodo.value = null;
+};
+
+// Navegar a un grupo específico (observador) - Cargar estudiantes
+const navegarAGrupo = async (grupo) => {
+  grupoSeleccionado.value = grupo;
+  loadingEstudiantes.value = true;
+  try {
+    const data = await estudiantesService.getEstudiantesByGrupo(grupo.id);
+    estudiantesGrupo.value = data;
+  } catch (error) {
+    console.error('Error al cargar estudiantes:', error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los estudiantes del grupo', life: 3000 });
+  } finally {
+    loadingEstudiantes.value = false;
+  }
+};
+
+// Volver a la lista de grupos (desde estudiantes)
+const volverAGrupos = () => {
+  grupoSeleccionado.value = null;
+  estudiantesGrupo.value = [];
+};
+
+// Generar reporte de observaciones de un estudiante (para directivos)
+const handleReportObservador = async (estudiante) => {
+  try {
+    console.log(`Generando reporte para: ${estudiante.nombres} ${estudiante.apellidos}`);
+    const historial = await observadoresService.getHistorialObservaciones(estudiante.id);
+    
+    if (!historial || historial.length === 0) {
+      toast.add({ severity: 'warn', summary: 'Sin observaciones', detail: 'Este estudiante no tiene observaciones registradas para generar el reporte.', life: 4000 });
+      return;
+    }
+
+    // Mapear historial al formato esperado para el documento
+    const mapPeriodos = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
+    const observacionesMap = {};
+
+    historial.forEach(obs => {
+      if (obs.periodo && mapPeriodos[obs.periodo]) {
+        observacionesMap[mapPeriodos[obs.periodo]] = {
+          fortalezas: obs.fortalezas,
+          dificultades: obs.dificultades,
+          compromisos: obs.compromisos
+        };
+      }
+    });
+
+    // Construir datos del estudiante
+    const datosEstudiante = {
+      nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
+      grado: grupoSeleccionado.value?.grado?.nombre || '',
+      anio: new Date().getFullYear().toString(),
+      tipoDocumento: estudiante.tipo_documento || 'T.I.',
+      numeroDocumento: estudiante.numero_documento,
+      celular: estudiante.celular || '',
+      direccion: estudiante.direccion || '',
+      rh: estudiante.rh || '',
+      eps: estudiante.eps || '',
+      nombrePadre: estudiante.nombre_padre || '',
+      nombreMadre: estudiante.nombre_madre || '',
+      acudiente: estudiante.acudiente || ''
+    };
+
+    toast.add({ severity: 'info', summary: 'Generando documento', detail: 'Por favor espere...', life: 2000 });
+    await generarObservador(datosEstudiante, observacionesMap);
+    
+  } catch (error) {
+    console.error("Error al generar reporte:", error);
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el reporte.', life: 3000 });
+  }
 };
 
 // Ver detalle de un proyecto
@@ -641,6 +745,23 @@ const confirmarEliminarComentarioProyecto = (comentario) => {
                 <span class="mx-2 text-gray-400">/</span>
                 <span class="text-gray-800 font-medium">Planeaciones</span>
               </template>
+              <template v-if="currentView === 'observador'">
+                <span class="mx-2 text-gray-400">/</span>
+                <a 
+                  v-if="grupoSeleccionado"
+                  class="text-blue-600 hover:text-blue-800 cursor-pointer font-medium transition-colors"
+                  @click="volverAGrupos"
+                >
+                  Observador del estudiante
+                </a>
+                <span v-else class="text-gray-800 font-medium">Observador del estudiante</span>
+                
+                <!-- Nombre del grupo seleccionado -->
+                <template v-if="grupoSeleccionado">
+                  <span class="mx-2 text-gray-400">/</span>
+                  <span class="text-gray-800 font-medium">{{ grupoSeleccionado?.grado?.nombre }}-{{ grupoSeleccionado?.nombre }}</span>
+                </template>
+              </template>
               <template v-if="currentView === 'proyectos'">
                 <span class="mx-2 text-gray-400">/</span>
                 <a 
@@ -861,6 +982,110 @@ const confirmarEliminarComentarioProyecto = (comentario) => {
                   }"
                 />
               </div>
+            </template>
+          </div>
+
+          <!-- ============ OBSERVADOR VIEW (Grupos y Estudiantes) ============ -->
+          <div v-if="currentView === 'observador'">
+            <!-- Loading grupos -->
+            <div v-if="loadingGrupos" class="flex items-center justify-center h-64">
+              <i class="pi pi-spin pi-spinner text-3xl text-blue-500"></i>
+            </div>
+
+            <template v-else>
+              <!-- ======= VISTA DE ESTUDIANTES DEL GRUPO ======= -->
+              <div v-if="grupoSeleccionado">
+                <!-- Loading estudiantes -->
+                <div v-if="loadingEstudiantes" class="flex items-center justify-center h-64">
+                  <i class="pi pi-spin pi-spinner text-3xl text-blue-500"></i>
+                </div>
+
+                <template v-else>
+                  <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <DataTable 
+                      :value="estudiantesGrupo" 
+                      :paginator="true"
+                      :rows="10"
+                      :rowsPerPageOptions="[5, 10, 20, 50]"
+                      tableStyle="min-width: 50rem"
+                      stripedRows
+                      :globalFilterFields="['numero_documento', 'nombres', 'apellidos']"
+                    >
+                      <template #empty>
+                        <div class="text-center py-8">
+                          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="pi pi-users text-3xl text-gray-400"></i>
+                          </div>
+                          <p class="text-gray-500">No hay estudiantes registrados en este grupo</p>
+                        </div>
+                      </template>
+                      
+                      <Column field="numero_documento" header="N° Documento" sortable style="width: 20%"></Column>
+                      <Column field="nombres" header="Nombres" sortable style="width: 30%"></Column>
+                      <Column field="apellidos" header="Apellidos" sortable style="width: 30%"></Column>
+                      <Column header="Opciones" style="width: 20%">
+                        <template #body="slotProps">
+                          <div class="flex gap-2">
+                            <Button
+                              icon="pi pi-file-pdf"
+                              class="p-button-rounded p-button-sm"
+                              severity="warning"
+                              @click="handleReportObservador(slotProps.data)"
+                            />
+                          </div>
+                        </template>
+                      </Column>
+                    </DataTable>
+                  </div>
+                </template>
+              </div>
+
+              <!-- ======= VISTA DE GRUPOS ======= -->
+              <template v-else>
+                <!-- Grid de grupos -->
+                <div v-if="gruposDocente.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div 
+                    v-for="grupo in gruposDocente" 
+                    :key="grupo.id"
+                    class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <!-- Card Header -->
+                    <div class="card-header bg-gradient-to-r from-blue-400 to-green-400 px-4 py-4">
+                      <h3 class="text-white text-lg font-semibold text-center truncate">
+                        {{ grupo?.grado?.nombre }}-{{ grupo.nombre }}
+                      </h3>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="p-6 flex flex-col items-center justify-center min-h-[100px]">
+                        <i class="pi pi-users text-4xl text-blue-200 mb-2"></i>
+                        <span class="text-gray-500 font-medium">Grupo a cargo</span>
+                    </div>
+                    
+                    <!-- Card Footer -->
+                    <div class="border-t border-gray-100 px-4 py-3 flex justify-end items-center bg-gray-50">
+                      <Button
+                        icon="pi pi-arrow-right"
+                        label="Entrar"
+                        class="p-button-sm p-button-text"
+                        severity="primary"
+                        @click="navegarAGrupo(grupo)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-else class="flex flex-col items-center justify-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="pi pi-folder-open text-2xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-800 mb-1">Sin grupos asignados</h3>
+                    <p class="text-gray-500 text-center max-w-md">
+                        Este docente no tiene grupos asignados como director de grupo actualmente.
+                    </p>
+                </div>
+              </template>
             </template>
           </div>
 
