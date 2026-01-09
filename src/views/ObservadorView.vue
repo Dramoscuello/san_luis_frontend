@@ -8,11 +8,16 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import { useUserStore } from "@/stores/user.js";
 import { useEstudiantesStore } from "@/stores/estudiantes.js";
+import { observadoresService } from "@/services/observadoresService.js";
 import ModalObservador from "@/components/ModalObservador.vue";
+
+import { generarObservador } from '@/utils/observadorGenerator';
+import { useToast } from 'primevue/usetoast';
 
 const userStore = useUserStore();
 const estudiantesStore = useEstudiantesStore();
 const router = useRouter();
+const toast = useToast();
 
 // State
 const showStudentsTable = ref(false);
@@ -46,9 +51,57 @@ const openObservador = (estudiante) => {
   showModalObservador.value = true;
 };
 
-const handleReport = (estudiante) => {
-    // Placeholder for report functionality
-    console.log("Generar reporte para:", estudiante);
+const handleReport = async (estudiante) => {
+    try {
+        console.log(`Generando reporte para: ${estudiante.nombres} ${estudiante.apellidos}`);
+        const historial = await observadoresService.getHistorialObservaciones(estudiante.id);
+        
+        if (!historial || historial.length === 0) {
+            toast.add({ severity: 'warn', summary: 'Sin observaciones', detail: 'Este estudiante no tiene observaciones registradas para generar el reporte.', life: 4000 });
+            return;
+        }
+
+        // Mapear historial al formato esperado para el documento
+        // Historial es array: [{ periodo: 1, ... }, { periodo: 2, ... }]
+        // Formato esperado: { 'I': {...}, 'II': {...} }
+        const mapPeriodos = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
+        const observacionesMap = {};
+
+        historial.forEach(obs => {
+            if (obs.periodo && mapPeriodos[obs.periodo]) {
+                observacionesMap[mapPeriodos[obs.periodo]] = {
+                    fortalezas: obs.fortalezas,
+                    dificultades: obs.dificultades,
+                    compromisos: obs.compromisos
+                };
+            }
+        });
+
+        // Construir datos del estudiante con la información disponible
+        // Nota: Faltan datos como RH, Lugar Nacimiento, etc. Se dejan vacíos si no están disponibles.
+        const datosEstudiante = {
+            nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
+            grado: selectedGrupo.value?.grado?.nombre || '',
+            anio: new Date().getFullYear().toString(),
+            tipoDocumento: estudiante.tipo_documento || 'T.I.', // Asumiendo campo
+            numeroDocumento: estudiante.numero_documento,
+            // Otros campos opcionales que podrian venir del backend si existen
+            celular: estudiante.celular || '',
+            direccion: estudiante.direccion || '',
+            rh: estudiante.rh || '',
+            eps: estudiante.eps || '',
+            nombrePadre: estudiante.nombre_padre || '',
+            nombreMadre: estudiante.nombre_madre || '',
+            acudiente: estudiante.acudiente || ''
+        };
+
+        toast.add({ severity: 'info', summary: 'Generando documento', detail: 'Por favor espere...', life: 2000 });
+        await generarObservador(datosEstudiante, observacionesMap);
+        
+    } catch (error) {
+        console.error("Error al generar reporte:", error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el reporte.', life: 3000 });
+    }
 };
 
 // Ensure we have the latest user data
@@ -118,7 +171,6 @@ onMounted(async () => {
                     class="p-button-sm p-button-text"
                     severity="primary"
                     @click="navigateToEstudiantes(grupo)"
-                    v-tooltip.top="'Ver estudiantes'"
                   />
                 </div>
               </div>
@@ -168,14 +220,12 @@ onMounted(async () => {
                           class="p-button-rounded p-button-sm"
                           severity="info"
                           @click="openObservador(slotProps.data)"
-                          v-tooltip.top="'Ver observador'"
                         />
                          <Button
                           icon="pi pi-file"
                           class="p-button-rounded p-button-sm"
                           severity="warning"
                           @click="handleReport(slotProps.data)"
-                          v-tooltip.top="'Generar reporte'"
                         />
                       </div>
                     </template>

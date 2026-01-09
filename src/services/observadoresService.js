@@ -26,5 +26,14 @@ export const observadoresService = {
         } catch (error) {
             throw error;
         }
+    },
+
+    async getHistorialObservaciones(estudianteId) {
+        try {
+            const response = await api.get(`/observadores/estudiante/${estudianteId}/historial`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
     }
 };
