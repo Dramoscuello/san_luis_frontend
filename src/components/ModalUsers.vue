@@ -58,26 +58,34 @@ const actualizarUser = async () => {
   try{
     await storeUser.updateUser();
     await storeUser.getUsers(); // Recargar datos del servidor para verificar persistencia real
-    toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario actualizado!', life: 3000 });
-  }catch (e){
-    console.error(e);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
-  }
-  finally {
+    toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario actualizado correctamente!', life: 3000 });
     storeModalUser.toggleModalUser();
+  }catch (err){
+    console.error(err);
+    let detail = 'Vuelva a intentarlo más tarde';
+    if (err.response?.data?.detail) {
+      detail = err.response.data.detail;
+    } else if (err.response?.data?.message) {
+      detail = err.response.data.message;
+    }
+    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
   }
 }
 
 const crearUser = async () => {
   try{
     await storeUser.createUser();
-    toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario creado!', life: 3000 });
-  }catch (e){
-    console.error(e);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
-  }
-  finally {
+    toast.add({ severity: 'success', summary: 'OK', detail: '¡Usuario creado correctamente!', life: 3000 });
     storeModalUser.toggleModalUser();
+  }catch (err){
+    console.error(err);
+    let detail = 'Vuelva a intentarlo más tarde';
+    if (err.response?.data?.detail) {
+      detail = err.response.data.detail;
+    } else if (err.response?.data?.message) {
+      detail = err.response.data.message;
+    }
+    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
   }
 }
 

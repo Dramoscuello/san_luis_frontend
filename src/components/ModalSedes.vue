@@ -22,11 +22,17 @@ const HandleSubmit =  () =>{
 const crearSede = async () => {
   try{
     await sedeStore.crearSede();
-    toast.add({ severity: 'info', summary: 'OK', detail: '¡Sede actualizada!', life: 3000 });
+    toast.add({ severity: 'success', summary: 'OK', detail: '¡Sede creada correctamente!', life: 3000 });
     store.toggleModalSede();
   }catch(err){
     console.log(err);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+    let detail = 'Vuelva a intentarlo más tarde';
+    if (err.response?.data?.detail) {
+      detail = err.response.data.detail;
+    } else if (err.response?.data?.message) {
+      detail = err.response.data.message;
+    }
+    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
   }
 }
 
@@ -34,11 +40,17 @@ const crearSede = async () => {
 const actualizarSede = async () => {
   try{
     await sedeStore.updateSede();
-    toast.add({ severity: 'info', summary: 'OK', detail: '¡Sede actualizada!', life: 3000 });
+    toast.add({ severity: 'success', summary: 'OK', detail: '¡Sede actualizada correctamente!', life: 3000 });
     store.toggleModalSede();
   }catch(err){
     console.log(err);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Vuelva a intentarlo mas tarde', life: 3000 });
+    let detail = 'Vuelva a intentarlo más tarde';
+    if (err.response?.data?.detail) {
+      detail = err.response.data.detail;
+    } else if (err.response?.data?.message) {
+      detail = err.response.data.message;
+    }
+    toast.add({ severity: 'error', summary: 'Error', detail: detail, life: 3000 });
   }
 }
 </script>

@@ -149,7 +149,25 @@ const guardarProyecto = async () => {
     clearNewFile();
   } catch (error) {
     console.error(error);
-    const msg = error.response?.data?.detail || 'Error al guardar el proyecto';
+    let msg = 'Error al guardar el proyecto';
+    
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (data.detail) {
+        if (Array.isArray(data.detail)) {
+          // Si es un array (errores de validación Pydantic), extraemos los mensajes
+          msg = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+        } else {
+          // Si es un string simple
+          msg = String(data.detail);
+        }
+      } else if (data.message) {
+        msg = String(data.message);
+      }
+    } else if (error.message) {
+      msg = error.message;
+    }
+    
     toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 5000 });
   }
 };
@@ -271,6 +289,7 @@ const enviarEvidencia = async () => {
     const fecha = new Date(fechaEvidencia.value);
     const fechaFormateada = fecha.toISOString().split('T')[0];
     formData.append('fecha_evidencia', fechaFormateada);
+
 
     await proyectosService.crearEvidencia(proyectoSeleccionado.value.id, formData);
     
@@ -899,7 +918,7 @@ const formatComentarioDate = (dateString) => {
           />
           <small class="text-gray-400">Mínimo 5 caracteres</small>
         </div>
-
+        
         <!-- Fecha -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -915,6 +934,8 @@ const formatComentarioDate = (dateString) => {
             :disabled="enviandoEvidencia"
           />
         </div>
+
+
 
         <!-- Archivo -->
         <div>

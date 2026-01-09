@@ -451,7 +451,25 @@ const enviarComentario = async () => {
     toast.add({ severity: 'success', summary: 'Enviado', detail: 'Comentario agregado correctamente', life: 3000 });
   } catch (error) {
     console.error('Error al enviar comentario:', error);
-    const errorMsg = error.response?.data?.detail || 'No se pudo enviar el comentario';
+    
+    let errorMsg = 'No se pudo enviar el comentario';
+    
+    if (error.response?.data) {
+      // Manejar detalle como string o array
+      const detail = error.response.data.detail;
+      if (detail) {
+        if (Array.isArray(detail)) {
+          errorMsg = detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+        } else {
+          errorMsg = String(detail);
+        }
+      } else if (error.response.data.message) {
+        errorMsg = String(error.response.data.message);
+      }
+    } else if (error.message) {
+      errorMsg = error.message;
+    }
+
     toast.add({ severity: 'error', summary: 'Error', detail: errorMsg, life: 5000 });
   }
 };

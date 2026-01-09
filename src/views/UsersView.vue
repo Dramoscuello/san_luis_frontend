@@ -314,6 +314,18 @@ const upload = async () => {
                     :disabled="!selectedFile || isUploading"
                     icon="pi pi-upload"
                   />
+                  
+                  <div class="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+                    <p class="font-semibold mb-1">Columnas requeridas:</p>
+                    <ul class="list-disc pl-4 space-y-0.5">
+                        <li>email</li>
+                        <li>nombre_completo</li>
+                        <li>cedula</li>
+                        <li>telefono</li>
+                        <li>sede_id</li>
+                        <li>password</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
