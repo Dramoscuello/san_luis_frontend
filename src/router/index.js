@@ -55,6 +55,12 @@ const router = createRouter({
             component: () => import('../views/MisPlaneacionesView.vue'),
             meta: { requiresAuth: true, roles: ['docente'] }
         },
+        {
+            path: '/observador',
+            name: 'observador',
+            component: () => import('../views/ObservadorView.vue'),
+            meta: { requiresAuth: true, roles: ['docente', 'coordinador', 'rector'] }
+        },
 
         // ============================================
         // RUTAS SOLO PARA DIRECTIVOS (Coordinador/Rector)

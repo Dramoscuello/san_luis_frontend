@@ -37,7 +37,9 @@ export const useLoginStore = defineStore('login', () => {
                 rol: userInfo.rol,
                 activo: userInfo.activo,
                 telefono: userInfo.telefono,
-                asignaturas: userInfo.asignaturas || []
+                sede_id: userInfo.sede_id,
+                asignaturas: userInfo.asignaturas || [],
+                grupos_a_cargo: userInfo.grupos_a_cargo || []
             });
 
             // 4. Redireccionar al home

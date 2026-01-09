@@ -12,7 +12,9 @@ export const useUserStore = defineStore("user", () => {
         rol: '',
         activo: true,
         telefono: '',
-        asignaturas: []
+        sede_id: null,
+        asignaturas: [],
+        grupos_a_cargo: []
     });
 
     const user = reactive({
@@ -32,19 +34,51 @@ export const useUserStore = defineStore("user", () => {
 
     async function getUserLogged() {
         try {
-            const user = authService.getUser();
-            if (!user?.cedula) {
-                console.error('No se encontró usuario en localStorage');
+            let identifier = null;
+            let userFromStorage = authService.getUser();
+
+            if (userFromStorage?.cedula) {
+                identifier = userFromStorage.cedula;
+            } else {
+                // Si no hay usuario en storage, intentamos obtenerlo del token
+                const payload = authService.getTokenPayload();
+                if (payload?.sub) {
+                    identifier = payload.sub;
+                }
+            }
+
+            if (!identifier) {
+                console.error('No se encontró identificación de usuario (ni en storage ni en token)');
                 return;
             }
-            const response = await userService.getInfoUserLogged(user.cedula)
+
+            const response = await userService.getInfoUserLogged(identifier);
+
+            // Si no teníamos usuario en storage O si queremos asegurar que el storage esté actualizado con la data fresca
+            // Guardamos nuevamente en localStorage para recuperarlo
+            await authService.setUser({
+                email: response.email,
+                nombre_completo: response.nombre_completo,
+                cedula: response.cedula,
+                rol: response.rol,
+                activo: response.activo,
+                telefono: response.telefono,
+                sede_id: response.sede_id,
+                asignaturas: response.asignaturas || [],
+                grupos_a_cargo: response.grupos_a_cargo || []
+            });
+
+            // Actualizamos el estado
             userLogged.email = response.email;
             userLogged.nombre_completo = response.nombre_completo;
             userLogged.cedula = response.cedula;
             userLogged.rol = response.rol;
             userLogged.activo = Boolean(response.activo);
             userLogged.telefono = response.telefono;
+            userLogged.sede_id = response.sede_id;
             userLogged.asignaturas = response.asignaturas || [];
+            userLogged.grupos_a_cargo = response.grupos_a_cargo || [];
+
         } catch (err) {
             console.log(err);
         }
