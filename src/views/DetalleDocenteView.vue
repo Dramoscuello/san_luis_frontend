@@ -352,20 +352,36 @@ const handleReportObservador = async (estudiante) => {
       }
     });
 
-    // Construir datos del estudiante
+    // Obtener datos del estudiante desde el historial (viene anidado en cada observación)
+    const estudianteData = historial[0]?.estudiante || estudiante;
+
+    // Formatear fecha de nacimiento
+    let fechaNacimiento = '';
+    if (estudianteData.fecha_nacimiento) {
+      const fecha = new Date(estudianteData.fecha_nacimiento);
+      fechaNacimiento = fecha.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    // Construir datos del estudiante con la información completa
     const datosEstudiante = {
-      nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
+      nombre: `${estudianteData.nombres} ${estudianteData.apellidos}`,
       grado: grupoSeleccionado.value?.grado?.nombre || '',
       anio: new Date().getFullYear().toString(),
-      tipoDocumento: estudiante.tipo_documento || 'T.I.',
-      numeroDocumento: estudiante.numero_documento,
-      celular: estudiante.celular || '',
-      direccion: estudiante.direccion || '',
-      rh: estudiante.rh || '',
-      eps: estudiante.eps || '',
-      nombrePadre: estudiante.nombre_padre || '',
-      nombreMadre: estudiante.nombre_madre || '',
-      acudiente: estudiante.acudiente || ''
+      edad: estudianteData.edad || '',
+      fechaNacimiento: fechaNacimiento,
+      lugarNacimiento: estudianteData.lugar_nacimiento || '',
+      tipoDocumento: estudianteData.tipo_documento || 'T.I.',
+      numeroDocumento: estudianteData.numero_documento || '',
+      rh: estudianteData.rh || '',
+      eps: estudianteData.eps || '',
+      nombrePadre: estudianteData.nombre_padre || '',
+      ocupacionPadre: estudianteData.ocupacion_padre || '',
+      celularPadre: estudianteData.celular_padre || '',
+      nombreMadre: estudianteData.nombre_madre || '',
+      ocupacionMadre: estudianteData.ocupacion_madre || '',
+      celularMadre: estudianteData.celular_madre || '',
+      acudiente: estudianteData.nombre_acudiente || '',
+      celularAcudiente: estudianteData.celular_acudiente || ''
     };
 
     toast.add({ severity: 'info', summary: 'Generando documento', detail: 'Por favor espere...', life: 2000 });

@@ -10,6 +10,7 @@ import { useUserStore } from "@/stores/user.js";
 import { useEstudiantesStore } from "@/stores/estudiantes.js";
 import { observadoresService } from "@/services/observadoresService.js";
 import ModalObservador from "@/components/ModalObservador.vue";
+import ModalEditarEstudiante from "@/components/ModalEditarEstudiante.vue";
 
 import { generarObservador } from '@/utils/observadorGenerator';
 import { useToast } from 'primevue/usetoast';
@@ -26,6 +27,10 @@ const selectedGrupo = ref(null);
 // Modal Observador State
 const showModalObservador = ref(false);
 const selectedEstudianteObs = ref(null);
+
+// Modal Editar Estudiante State
+const showModalEditarEstudiante = ref(false);
+const selectedEstudianteEdit = ref(null);
 
 // Retrieve groups from store
 const grupos = computed(() => userStore.userLogged.grupos_a_cargo || []);
@@ -52,8 +57,15 @@ const openObservador = (estudiante) => {
 };
 
 const handleEdit = (estudiante) => {
-  // TODO: Implementar edición del estudiante
-  console.log('Editar estudiante:', estudiante);
+  selectedEstudianteEdit.value = estudiante;
+  showModalEditarEstudiante.value = true;
+};
+
+const onEstudianteUpdated = async () => {
+  // Recargar estudiantes del grupo para mostrar datos actualizados
+  if (selectedGrupo.value) {
+    await estudiantesStore.getEstudiantesByGrupo(selectedGrupo.value.id);
+  }
 };
 
 const handleReport = async (estudiante) => {
@@ -67,8 +79,6 @@ const handleReport = async (estudiante) => {
         }
 
         // Mapear historial al formato esperado para el documento
-        // Historial es array: [{ periodo: 1, ... }, { periodo: 2, ... }]
-        // Formato esperado: { 'I': {...}, 'II': {...} }
         const mapPeriodos = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
         const observacionesMap = {};
 
@@ -82,22 +92,36 @@ const handleReport = async (estudiante) => {
             }
         });
 
-        // Construir datos del estudiante con la información disponible
-        // Nota: Faltan datos como RH, Lugar Nacimiento, etc. Se dejan vacíos si no están disponibles.
+        // Obtener datos del estudiante desde el historial (viene anidado en cada observación)
+        const estudianteData = historial[0]?.estudiante || estudiante;
+
+        // Formatear fecha de nacimiento
+        let fechaNacimiento = '';
+        if (estudianteData.fecha_nacimiento) {
+            const fecha = new Date(estudianteData.fecha_nacimiento);
+            fechaNacimiento = fecha.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        // Construir datos del estudiante con la información completa
         const datosEstudiante = {
-            nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
+            nombre: `${estudianteData.nombres} ${estudianteData.apellidos}`,
             grado: selectedGrupo.value?.grado?.nombre || '',
             anio: new Date().getFullYear().toString(),
-            tipoDocumento: estudiante.tipo_documento || 'T.I.', // Asumiendo campo
-            numeroDocumento: estudiante.numero_documento,
-            // Otros campos opcionales que podrian venir del backend si existen
-            celular: estudiante.celular || '',
-            direccion: estudiante.direccion || '',
-            rh: estudiante.rh || '',
-            eps: estudiante.eps || '',
-            nombrePadre: estudiante.nombre_padre || '',
-            nombreMadre: estudiante.nombre_madre || '',
-            acudiente: estudiante.acudiente || ''
+            edad: estudianteData.edad || '',
+            fechaNacimiento: fechaNacimiento,
+            lugarNacimiento: estudianteData.lugar_nacimiento || '',
+            tipoDocumento: estudianteData.tipo_documento || 'T.I.',
+            numeroDocumento: estudianteData.numero_documento || '',
+            rh: estudianteData.rh || '',
+            eps: estudianteData.eps || '',
+            nombrePadre: estudianteData.nombre_padre || '',
+            ocupacionPadre: estudianteData.ocupacion_padre || '',
+            celularPadre: estudianteData.celular_padre || '',
+            nombreMadre: estudianteData.nombre_madre || '',
+            ocupacionMadre: estudianteData.ocupacion_madre || '',
+            celularMadre: estudianteData.celular_madre || '',
+            acudiente: estudianteData.nombre_acudiente || '',
+            celularAcudiente: estudianteData.celular_acudiente || ''
         };
 
         toast.add({ severity: 'info', summary: 'Generando documento', detail: 'Por favor espere...', life: 2000 });
@@ -252,5 +276,11 @@ onMounted(async () => {
   <ModalObservador
     v-model:visible="showModalObservador"
     :estudiante="selectedEstudianteObs"
+  />
+
+  <ModalEditarEstudiante
+    v-model:visible="showModalEditarEstudiante"
+    :estudiante="selectedEstudianteEdit"
+    @updated="onEstudianteUpdated"
   />
 </template>
